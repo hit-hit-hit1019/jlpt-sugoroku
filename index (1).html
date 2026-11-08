@@ -1,0 +1,2459 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px/1.5 system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>JLPT人生すごろく</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Maru+Gothic:wght@500;700;900&family=Noto+Sans+SC:wght@500;700;900&display=swap">
+<style>
+/* Layout: TV-first 16:9 — snake-shaped life board on the left, roulette + asset board on the right; stacks on phones */
+:root{
+  --bg:#e8eef6; --surface:#ffffff; --ink:#1b2233; --muted:#59627a; --line:#d2d9e6;
+  --board:#2a3963; --accent:#ff7a2f; --accent-ink:#ffffff; --ok:#15924a; --ng:#d42a2a;
+  --st1:#cdeebb; --st2:#c4e0f7; --st3:#fbd0de; --st4:#fddcb0; --st5:#e2d6f5; --st6:#bfe8e1; --st7:#f1d9a6; --goal:#ffd84d; --tile-ink:#1b2233;
+  --t1:#e5484d; --t2:#2f6fe0; --t3:#e8b100; --t4:#18a06a; --t5:#9346d6;
+  --k-g:#1b2233; --k-v:#0b6e75; --k-o:#a3401a; --k-chance:#e8590c; --k-battle:#c2255c; --k-risk:#5a3fc0; --k-stop:#d42a2a; --k-shop:#2b7a0b; --k-pay:#e8b100; --k-fwd:#2f9e44; --k-back:#c2410c; --k-bomb:#4b2a6b; --k-iv:#1864ab; --k-read:#0c8599;
+  --lv3:#2f9e44; --lv2:#1c7ed6; --lv1:#c92a2a;
+  --f-disp:"Dela Gothic One","Hiragino Sans","Yu Gothic",sans-serif;
+  --f-body:"Zen Maru Gothic","Hiragino Maru Gothic ProN","Yu Gothic",sans-serif;
+  --f-zh:"Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif; --zh:#0b6e75;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#111727; --surface:#1c2437; --ink:#eef2f8; --muted:#9ba5ba; --line:#2d3752;
+  --board:#0a0f1e; --accent:#ff8a45; --accent-ink:#1b1206; --ok:#2fc46b; --ng:#f25a5a; --zh:#6fd3cf; color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#111727; --surface:#1c2437; --ink:#eef2f8; --muted:#9ba5ba; --line:#2d3752;
+  --board:#0a0f1e; --accent:#ff8a45; --accent-ink:#1b1206; --ok:#2fc46b; --ng:#f25a5a; --zh:#6fd3cf; color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-weight:500}
+*{box-sizing:border-box}
+button{font-family:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+
+.app{height:100%;display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,29%);gap:clamp(12px,1.4vw,28px);
+  padding-block:clamp(12px,1.4vw,24px);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+/* board */
+.board{background:var(--board);border-radius:22px;padding:clamp(8px,1vw,20px);display:grid;
+  grid-template-columns:repeat(6,minmax(0,1fr));grid-template-rows:repeat(var(--rows,5),minmax(0,1fr));gap:clamp(5px,.7vw,14px);min-height:0}
+.tile{background:var(--c);color:var(--tile-ink);border-radius:14px;padding:clamp(4px,.5vw,10px) clamp(5px,.6vw,12px);
+  display:flex;flex-direction:column;gap:2px;position:relative;min-width:0;min-height:0;transition:transform .2s, box-shadow .2s}
+.tile .no{font-family:var(--f-disp);font-size:clamp(10px,.8vw,16px);opacity:.55;font-variant-numeric:tabular-nums;line-height:1;min-height:1em}
+.tile .lb{font-weight:900;font-size:clamp(11px,1.2vw,24px);line-height:1.2;text-wrap:balance}
+.chip{align-self:flex-start;font-weight:900;font-size:clamp(9px,.85vw,17px);padding:1px 7px;border-radius:999px;background:rgba(27,34,51,.12);color:var(--tile-ink);white-space:nowrap}
+.chip.plus{background:#15924a;color:#fff}
+.chip.minus{background:#d42a2a;color:#fff}
+.chip.k{background:var(--kc);color:#fff}
+.tile.special{box-shadow:inset 0 0 0 3px var(--kc)}
+.tile.big .lb{font-family:var(--f-disp);font-weight:400;font-size:clamp(14px,1.7vw,34px)}
+.tile.hot{box-shadow:0 0 0 4px var(--accent),0 0 24px 4px color-mix(in srgb,var(--accent) 60%,transparent);transform:scale(1.04);z-index:2}
+.pay{position:absolute;top:-6px;right:-4px;background:var(--k-pay);color:#1b2233;font-weight:900;font-size:clamp(8px,.72vw,14px);
+  padding:1px 6px;border-radius:999px;border:2px solid #1b2233;transform:rotate(6deg)}
+.tokens{margin-top:auto;display:flex;flex-wrap:wrap;gap:3px}
+.tok{position:relative;width:clamp(15px,1.75vw,36px);height:clamp(15px,1.75vw,36px);border-radius:50%;background:var(--tc);border:3px solid #fff;
+  box-shadow:0 2px 4px rgba(0,0,0,.35);color:#fff;font-family:var(--f-disp);font-size:clamp(9px,.9vw,18px);display:grid;place-items:center;line-height:1}
+.tok.now{animation:bob .9s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-4px)}}
+.arrow{position:absolute;right:5px;bottom:3px;font-size:clamp(9px,.8vw,15px);opacity:.4;font-weight:900}
+
+.board.dense{gap:clamp(4px,.5vw,10px)}
+.board.dense .tile{padding:clamp(3px,.35vw,7px) clamp(4px,.5vw,10px);gap:1px}
+.board.dense .tile .lb{font-size:clamp(10px,1vw,20px);line-height:1.15}
+.board.dense .chip{font-size:clamp(8px,.72vw,14px)}
+.board.dense .tok{width:clamp(13px,1.45vw,30px);height:clamp(13px,1.45vw,30px);border-width:2px;font-size:clamp(8px,.75vw,15px)}
+.board.dense .tile.big .lb{font-size:clamp(13px,1.4vw,28px)}
+.board.xdense .tile .lb{font-size:clamp(9px,.88vw,17px)}
+.board.xdense .tile .no{font-size:clamp(8px,.65vw,12px)}
+.board.xdense .tok{width:clamp(12px,1.2vw,24px);height:clamp(12px,1.2vw,24px)}
+
+/* panel */
+.panel{display:flex;flex-direction:column;gap:clamp(8px,.9vw,16px);min-height:0;min-width:0;overflow:auto}
+h1{margin:0;font-family:var(--f-disp);font-weight:400;font-size:clamp(22px,2vw,42px);line-height:1.1;letter-spacing:.02em}
+h1 small{display:block;font-family:var(--f-body);font-weight:700;font-size:clamp(11px,.85vw,17px);color:var(--muted);letter-spacing:.08em;margin-top:4px}
+.turn{display:flex;align-items:center;gap:12px;background:var(--surface);border-radius:16px;padding:clamp(6px,.8vw,14px) clamp(12px,1.1vw,20px);border:2px solid var(--line)}
+.turn .lab{font-size:clamp(11px,.85vw,16px);color:var(--muted);font-weight:700;letter-spacing:.06em}
+.turn .nm{font-family:var(--f-disp);font-size:clamp(20px,1.9vw,38px);line-height:1.15}
+.dot{width:clamp(22px,2vw,40px);height:clamp(22px,2vw,40px);border-radius:50%;background:var(--tc);border:3px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.3);flex:none}
+
+.wheelbox{display:flex;flex-direction:column;align-items:center;gap:clamp(6px,.7vw,12px);flex:1 1 auto;min-height:0;justify-content:center}
+.wheel{width:min(100%,23vh);height:auto;aspect-ratio:1;max-width:100%;filter:drop-shadow(0 6px 10px rgba(0,0,0,.25))}
+.spin{font-family:var(--f-disp);font-size:clamp(18px,1.5vw,30px);background:var(--accent);color:var(--accent-ink);border:0;border-radius:999px;
+  padding:.45em 1.4em;box-shadow:0 5px 0 color-mix(in srgb,var(--accent) 60%,#000);transition:transform .1s}
+.spin:active{transform:translateY(3px);box-shadow:0 2px 0 color-mix(in srgb,var(--accent) 60%,#000)}
+.spin:disabled{opacity:.45;cursor:default}
+.spin.stop{background:var(--ng);color:#fff;box-shadow:0 5px 0 color-mix(in srgb,var(--ng) 60%,#000);animation:pulse .6s ease-in-out infinite}
+.result{font-family:var(--f-disp);font-size:clamp(15px,1.3vw,26px);min-height:1.3em;text-align:center}
+
+.score{display:flex;flex-direction:column;gap:5px}
+.score .cap{display:flex;justify-content:space-between;font-size:clamp(10px,.75vw,14px);color:var(--muted);font-weight:900;letter-spacing:.06em;padding:0 4px}
+.row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:10px;background:var(--surface);border-radius:12px;
+  padding:clamp(4px,.45vw,9px) clamp(10px,.9vw,16px);border:2px solid transparent}
+.row.cur{border-color:var(--accent)}
+.row .dot{width:clamp(16px,1.3vw,26px);height:clamp(16px,1.3vw,26px)}
+.row .n{font-weight:900;font-size:clamp(14px,1.05vw,21px);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .s{display:block;font-size:clamp(10px,.72vw,14px);color:var(--muted);font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .s b{color:var(--ink)}
+.row .s .debt{color:var(--ng)}
+.flag{display:inline-block;font-size:.8em;font-weight:900;color:#fff;background:var(--k-risk);border-radius:6px;padding:0 5px;margin-left:4px;vertical-align:middle}
+.flag.rest{background:var(--muted)}
+.flag.bombf{background:var(--k-bomb)}
+.row .m{font-family:var(--f-disp);font-size:clamp(16px,1.35vw,27px);font-variant-numeric:tabular-nums;white-space:nowrap}
+.m.neg{color:var(--ng)}
+.clock{display:flex;align-items:center;gap:10px;background:var(--ink);color:var(--surface);border-radius:14px;padding:clamp(4px,.5vw,10px) clamp(12px,1vw,18px)}
+.clock .lab{font-weight:900;font-size:clamp(11px,.85vw,16px)}
+.clock .cnum{font-family:var(--f-disp);font-size:clamp(22px,2vw,40px);font-variant-numeric:tabular-nums;margin-left:auto}
+.clock button{border:2px solid currentColor;background:transparent;color:inherit;border-radius:999px;padding:2px 10px;font-weight:900;font-size:clamp(11px,.8vw,15px)}
+.clock.low{background:var(--k-chance);color:#fff}
+.clock.up{background:var(--ng);color:#fff;animation:pulse 1s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.75}}
+.tools{display:flex;gap:6px;flex-wrap:wrap}
+.tools .ghost{flex:1 1 auto;background:var(--surface);font-size:clamp(12px,.85vw,16px)}
+.savestat{font-size:clamp(10px,.75vw,14px);color:var(--muted);font-weight:700;margin:0;text-align:right}
+
+details{background:var(--surface);border-radius:12px;padding:8px 14px;font-size:clamp(13px,.9vw,17px)}
+summary{font-weight:900;cursor:pointer}
+.set{display:flex;flex-direction:column;gap:10px;padding-block:10px 4px}
+.seg{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.seg button,.ghost{border:2px solid var(--line);background:transparent;color:var(--ink);border-radius:10px;padding:5px 12px;font-weight:700;font-size:inherit}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.ghost.warn{border-color:var(--ng);color:var(--ng)}
+.names{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.names input{width:100%;min-width:0;font:inherit;font-weight:700;padding:5px 8px;border-radius:8px;border:2px solid var(--line);background:var(--bg);color:var(--ink)}
+.hint{color:var(--muted);font-size:clamp(11px,.75vw,14px);margin:0;line-height:1.6}
+
+/* toasts */
+.toasts{position:fixed;top:calc(env(safe-area-inset-top,0px) + 14px);left:50%;transform:translateX(-50%);z-index:40;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none;width:min(92vw,760px)}
+.toast{background:var(--k-pay);color:#1b2233;font-family:var(--f-disp);font-size:clamp(18px,1.9vw,38px);padding:.3em 1em;border-radius:999px;
+  border:3px solid #1b2233;box-shadow:0 6px 0 rgba(0,0,0,.25);animation:tin .3s ease-out;text-align:center}
+.toast small{font-family:var(--f-body);font-weight:900;font-size:.55em;margin-left:.4em}
+.toast.gray{background:var(--surface);color:var(--ink);border-color:var(--ink)}
+@keyframes tin{from{transform:translateY(-20px) scale(.9);opacity:0}}
+
+/* overlay */
+.ov{position:fixed;inset:0;background:rgba(10,14,28,.62);display:grid;place-items:center;z-index:20;
+  padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.card{background:var(--surface);color:var(--ink);border-radius:26px;width:min(1180px,100%);max-height:100%;overflow:auto;
+  padding:clamp(18px,2.2vw,44px);display:flex;flex-direction:column;gap:clamp(10px,1.1vw,20px);border-top:14px solid var(--sc);animation:pop .28s ease-out}
+@keyframes pop{from{transform:scale(.94);opacity:0}}
+.head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.stg{background:var(--sc);color:var(--tile-ink);font-weight:900;border-radius:999px;padding:4px 14px;font-size:clamp(13px,1.1vw,22px)}
+.kind{background:var(--kc);color:#fff;font-weight:900;border-radius:999px;padding:4px 14px;font-size:clamp(13px,1.1vw,22px)}
+.who{display:flex;align-items:center;gap:8px;font-weight:900;font-size:clamp(14px,1.2vw,24px);margin-left:auto}
+.who .dot{width:clamp(18px,1.5vw,30px);height:clamp(18px,1.5vw,30px)}
+.ttl{margin:0;font-family:var(--f-disp);font-weight:400;font-size:clamp(26px,2.9vw,58px);line-height:1.15;text-wrap:balance}
+.desc{margin:0;font-size:clamp(16px,1.5vw,30px);font-weight:700;color:var(--muted)}
+.desc b{color:var(--ink)}
+.inst{margin:0;display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-weight:900;font-size:clamp(15px,1.4vw,28px)}
+.inst .qcat{background:var(--kc);color:#fff;border-radius:8px;padding:2px 10px;font-size:.85em}
+.qs{margin:0;font-size:clamp(22px,2.7vw,54px);font-weight:900;line-height:1.7;background:var(--bg);border-radius:16px;padding:.45em .7em}
+.blank{display:inline-block;min-width:4.2em;border-bottom:4px solid var(--ink);margin:0 .15em;text-align:center;line-height:1.2}
+.blank.filled{color:var(--ok);border-color:var(--ok)}
+.ul{text-decoration:underline;text-decoration-thickness:4px;text-underline-offset:.22em}
+.ansnote{color:var(--ok);margin-left:.3em}
+.slot{display:inline-block;min-width:3.4em;border-bottom:4px solid var(--ink);margin:0 .12em;text-align:center;line-height:1.2;padding:0 .15em}
+.slot.star{color:var(--accent);border-color:var(--accent)}
+.slot.fill{color:var(--ink)}
+.slot.fill.star{background:color-mix(in srgb,var(--ok) 18%,transparent);color:var(--ok);border-color:var(--ok)}
+.opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:clamp(8px,1vw,18px)}
+.opt{display:flex;align-items:center;gap:.6em;text-align:left;font-size:clamp(20px,2.2vw,44px);font-weight:900;padding:.35em .6em;
+  border-radius:16px;border:3px solid var(--line);background:var(--surface);color:var(--ink);min-width:0}
+.opt .k{font-family:var(--f-disp);font-weight:400;font-size:.7em;width:1.6em;height:1.6em;border-radius:50%;display:grid;place-items:center;background:var(--ink);color:var(--surface);flex:none}
+.opt:hover:not(:disabled){border-color:var(--accent)}
+.opt:disabled{cursor:default;opacity:.55}
+.opt.right{background:var(--ok);border-color:var(--ok);color:#fff;opacity:1}
+.opt.right .k{background:#fff;color:var(--ok)}
+.opt.wrong{background:var(--ng);border-color:var(--ng);color:#fff;opacity:.85}
+.opt.wrong .k{background:#fff;color:var(--ng)}
+.verdict{display:flex;align-items:baseline;gap:.5em;flex-wrap:wrap;font-family:var(--f-disp);font-size:clamp(24px,2.5vw,50px)}
+.verdict.ok{color:var(--ok)} .verdict.ng{color:var(--ng)} .verdict.neutral{color:var(--ink)}
+.verdict .ex{font-family:var(--f-body);font-weight:700;font-size:.55em;color:var(--muted)}
+.money{font-family:var(--f-disp);font-size:clamp(30px,4vw,80px);font-variant-numeric:tabular-nums}
+.money.plus{color:var(--ok)} .money.minus{color:var(--ng)}
+.foot{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap}
+.next{font-family:var(--f-disp);font-size:clamp(18px,1.6vw,32px);background:var(--ink);color:var(--surface);border:0;border-radius:999px;padding:.45em 1.4em}
+.next.alt{background:transparent;color:var(--ink);border:3px solid var(--line)}
+
+.qtimer{display:flex;align-items:center;gap:12px}
+.qtimer .tbar{flex:1;height:clamp(10px,1vw,18px);background:var(--bg);border-radius:999px;overflow:hidden}
+.qtimer .tbar i{display:block;height:100%;background:var(--ok);transform-origin:left;transition:transform .1s linear}
+.qtimer .tnum{font-family:var(--f-disp);font-size:clamp(24px,2.4vw,48px);min-width:1.6em;text-align:right;font-variant-numeric:tabular-nums}
+.qtimer.low .tbar i{background:var(--ng)} .qtimer.low .tnum{color:var(--ng)}
+
+/* mistakes */
+.misses{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px}
+.miss{background:var(--bg);border-radius:16px;padding:.7em 1em;display:flex;flex-direction:column;gap:.3em}
+.miss .mno{font-family:var(--f-disp);font-size:1.1em}
+.miss .mcnt{margin-left:auto;color:var(--ng);font-size:.85em}
+.miss .mq{margin:0;font-size:clamp(20px,2.2vw,44px);font-weight:900;line-height:1.7}
+.miss .mex{margin:0;font-weight:700;color:var(--muted);font-size:clamp(14px,1.3vw,26px)}
+.miss .mteam{margin:0;font-weight:700;font-size:clamp(12px,1vw,20px)}
+
+/* question editor */
+.sub{margin:0;font-family:var(--f-disp);font-weight:400;font-size:clamp(18px,1.6vw,32px)}
+.ed{display:flex;flex-direction:column;gap:12px;background:var(--bg);border-radius:18px;padding:clamp(12px,1.4vw,24px)}
+.ed .seg{font-size:clamp(13px,1vw,18px)}
+.ed .seg button{background:var(--surface)}
+.ed .seg button[aria-pressed="true"]{background:var(--ink)}
+.fl{display:flex;flex-direction:column;gap:4px;font-weight:900;font-size:clamp(13px,1vw,18px)}
+.fl input,.fl textarea{font:inherit;font-weight:700;font-size:clamp(15px,1.2vw,22px);padding:6px 10px;border-radius:10px;border:2px solid var(--line);background:var(--surface);color:var(--ink);width:100%;min-width:0}
+.fl textarea{resize:vertical}
+.parts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.parts.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+.err{margin:0;color:var(--ng);font-weight:900;min-height:1.2em}
+.clist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.cq{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--bg);border-radius:12px;padding:.4em .7em;font-weight:700;font-size:clamp(13px,1vw,19px)}
+.cq.editing{outline:3px solid var(--accent)}
+.cq .ctype{color:var(--muted);font-size:.85em}
+.cq .ctext{flex:1 1 12em;min-width:0}
+.cq .cbtns{display:flex;gap:6px}
+.cq .ghost.warn,.ghost.warn{border-color:var(--ng);color:var(--ng)}
+
+/* bets / steal / help cards / interview */
+.bets{display:flex;flex-direction:column;gap:6px;width:min(100%,820px)}
+.betttl{margin:0;font-weight:900;font-size:clamp(14px,1.25vw,24px);color:var(--muted);text-align:center}
+.betrow{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center;background:var(--bg);border-radius:12px;padding:.25em .7em;font-weight:900;font-size:clamp(14px,1.3vw,26px)}
+.betrow .bn{display:flex;align-items:center;gap:8px;min-width:0}
+.betrow .dot{width:1em;height:1em;border-width:2px}
+.bbtn{border:3px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:.1em .8em;font-weight:900;font-size:inherit}
+.bbtn.o[aria-pressed="true"]{background:var(--ok);border-color:var(--ok);color:#fff}
+.bbtn.x[aria-pressed="true"]{background:var(--ng);border-color:var(--ng);color:#fff}
+.betsum,.betres{margin:0;font-weight:900;font-size:clamp(14px,1.3vw,26px);display:flex;gap:.8em;flex-wrap:wrap}
+.bo{color:var(--ok)} .bx{color:var(--ng)}
+.helps{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.helps .lab{font-weight:900;font-size:clamp(12px,1vw,20px);color:var(--muted)}
+.hbtn{border:3px solid var(--k-chance);background:var(--surface);color:var(--ink);border-radius:999px;font-weight:900;padding:.15em .8em;font-size:clamp(14px,1.25vw,24px)}
+.hbtn:disabled{opacity:.35;text-decoration:line-through;cursor:default}
+.opt.gone{opacity:.18!important;text-decoration:line-through}
+.steal{display:flex;flex-direction:column;gap:10px;background:color-mix(in srgb,var(--k-chance) 12%,var(--surface));border:3px solid var(--k-chance);border-radius:18px;padding:.6em .9em}
+.stealttl{font-family:var(--f-disp);font-size:clamp(22px,2.4vw,48px);color:var(--k-chance);line-height:1.2}
+.steal .lab{font-weight:900;font-size:clamp(14px,1.3vw,26px)}
+.ivq{display:flex;gap:clamp(10px,1.2vw,22px);align-items:flex-start;background:var(--bg);border-radius:18px;padding:.6em .9em}
+.ivwho{background:var(--k-iv);color:#fff;border-radius:10px;padding:.2em .6em;font-weight:900;white-space:nowrap;font-size:clamp(14px,1.3vw,26px);margin-top:.5em}
+.ivtext{margin:0;font-size:clamp(24px,3vw,60px);font-weight:900;line-height:1.5;min-width:0}
+.ivhint{margin:0;font-weight:700;color:var(--muted);font-size:clamp(15px,1.5vw,30px)}
+.judge{display:flex;gap:clamp(8px,1vw,16px);flex-wrap:wrap;align-items:center}
+.judge .lab{font-weight:900;font-size:clamp(14px,1.3vw,26px)}
+.jbtn{font-family:var(--f-disp);font-size:clamp(20px,2.2vw,44px);border:0;border-radius:16px;padding:.3em .8em;color:#fff}
+.jbtn.j3{background:var(--ok)} .jbtn.j2{background:var(--lv2)} .jbtn.j1{background:var(--muted)}
+
+.tsit{margin:0;display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-weight:900;font-size:clamp(16px,1.6vw,32px)}
+.regtag{display:inline-block;border-radius:8px;padding:1px 10px;font-weight:900;font-size:.85em;color:#fff;background:var(--muted)}
+.regtag.r-k{background:var(--k-stop)} .regtag.r-t{background:var(--k-iv)} .regtag.r-c{background:var(--k-fwd)}
+.ttask{margin:0;font-weight:900;font-size:clamp(18px,2vw,40px);color:var(--accent)}
+.thint{display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-height:1.6em}
+[hidden]{display:none!important}
+.hbtn2{border:3px solid var(--k-chance);background:var(--surface);color:var(--ink);border-radius:999px;font-weight:900;padding:.15em .9em;font-size:clamp(14px,1.25vw,24px)}
+.hline{display:block;color:var(--ink);font-weight:900;font-size:clamp(18px,1.9vw,38px);line-height:1.7}
+.htag{display:inline-block;background:var(--k-chance);color:#fff;border-radius:8px;padding:0 .5em;font-size:.6em;font-weight:900;vertical-align:middle;margin-right:.4em}
+.hblank{display:inline-block;height:1.1em;border-bottom:4px solid var(--k-chance);vertical-align:-.15em;margin:0 .1em;max-width:100%}
+.hkey{color:var(--k-chance)}
+.hused{font-weight:900;color:var(--k-chance);font-size:clamp(13px,1.1vw,20px)}
+
+.readtxt{margin:0;font-size:clamp(24px,2.9vw,58px);font-weight:900;line-height:1.9;background:var(--bg);border-radius:16px;padding:.5em .8em;letter-spacing:.02em}
+.readtxt.ruby{line-height:2.3}
+.readtxt rt{font-size:.45em;color:var(--k-read);font-weight:700}
+
+/* question start gate */
+.gate{display:flex;flex-direction:column;align-items:center;gap:clamp(10px,1.2vw,22px);padding-block:clamp(14px,2.4vw,44px)}
+.gatebtn{font-family:var(--f-disp);font-size:clamp(28px,3.6vw,72px);background:var(--accent);color:var(--accent-ink);border:0;border-radius:999px;padding:.4em 1.6em;box-shadow:0 6px 0 color-mix(in srgb,var(--accent) 60%,#000);animation:pulse 1.2s ease-in-out infinite}
+.gatebtn:active{transform:translateY(3px);box-shadow:0 3px 0 color-mix(in srgb,var(--accent) 60%,#000)}
+.gatehint{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:center;font-weight:900;font-size:clamp(15px,1.4vw,28px);color:var(--muted)}
+
+/* poverty god */
+.bmark{position:absolute;right:-.85em;top:-1em;width:1.35em;height:1.4em;pointer-events:none;filter:drop-shadow(0 1px 2px rgba(0,0,0,.4))}
+.bmark svg{width:100%;height:100%;display:block}
+.bcard{display:grid;grid-template-columns:auto minmax(0,1fr);gap:clamp(14px,2vw,40px);align-items:center}
+.bpic svg{width:clamp(120px,15vw,280px);height:auto;display:block;animation:float 2.4s ease-in-out infinite}
+.btext{display:flex;flex-direction:column;gap:clamp(8px,1vw,18px);min-width:0}
+.evolve{align-self:flex-start;font-family:var(--f-disp);font-size:clamp(20px,2.2vw,44px);color:#fff;background:var(--k-bomb);border-radius:14px;padding:.2em .6em}
+@keyframes float{50%{transform:translateY(-10px) rotate(-3deg)}}
+.rules .compact .ja{font-size:clamp(14px,1.4vw,28px);line-height:1.4}
+.rules .compact .zh{font-size:clamp(13px,1.2vw,24px);line-height:1.4}
+.rules.m-zh .compact .zh{font-size:clamp(14px,1.4vw,28px)}
+.compact .rbody{gap:clamp(4px,.5vw,10px)}
+.rbomb svg{width:clamp(70px,7vw,130px);height:auto;display:block}
+
+/* rules */
+.rules{display:flex;flex-direction:column;gap:clamp(10px,1.2vw,22px)}
+.rhead{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.rhead .seg{font-size:clamp(13px,1vw,18px)}
+.rhead .seg b{display:none}
+.rpage{margin-left:auto;font-family:var(--f-disp);font-size:clamp(16px,1.4vw,28px);color:var(--muted);font-variant-numeric:tabular-nums}
+.rules .ja{display:block;font-weight:900;font-size:clamp(18px,2vw,40px);line-height:1.5}
+.rules .zh{display:block;font-family:var(--f-zh);font-weight:700;font-size:clamp(16px,1.75vw,35px);line-height:1.5;color:var(--zh)}
+.rules.m-ja .zh,.rules.m-zh .ja{display:none!important}
+.rules.m-zh .zh{color:var(--ink);font-weight:900;font-size:clamp(18px,2vw,40px)}
+.rtitle{margin:0}
+.rtitle .ja{font-family:var(--f-disp);font-weight:400;font-size:clamp(28px,3.2vw,64px);line-height:1.15}
+.rtitle .zh{font-size:clamp(20px,2.2vw,44px);font-weight:900}
+.rules.m-zh .rtitle .zh{font-size:clamp(28px,3.2vw,64px)}
+.rbody{display:flex;flex-direction:column;gap:clamp(8px,.9vw,16px)}
+.rbody.cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+.rbody.cols .ja{font-size:clamp(16px,1.6vw,32px)}
+.rbody.cols .zh{font-size:clamp(14px,1.4vw,28px)}
+.rules.m-zh .rbody.cols .zh{font-size:clamp(16px,1.6vw,32px)}
+.ritem{background:var(--bg);border-radius:16px;padding:.5em .9em;display:flex;flex-direction:column;gap:.3em;min-width:0}
+.ritem.step,.ritem.rkind{display:grid;grid-template-columns:auto minmax(0,1fr);gap:clamp(10px,1.2vw,22px);align-items:center}
+.rnum{font-family:var(--f-disp);font-size:clamp(26px,2.8vw,56px);width:1.6em;height:1.6em;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:var(--accent-ink);line-height:1}
+.rk{background:var(--kc);color:#fff;border-radius:12px;padding:.3em .6em;text-align:center;min-width:6.5em}
+.rules .rk .ja,.rules .rk .zh{color:#fff;font-size:clamp(15px,1.5vw,30px);line-height:1.3}
+.rules .rk .zh{font-size:clamp(13px,1.2vw,24px)}
+.rbox{background:var(--goal);color:var(--tile-ink);border-radius:16px;padding:.5em .9em;text-align:center}
+.rules .rbox .ja,.rules .rbox .zh{color:var(--tile-ink)}
+.rlv{display:flex;gap:10px;flex-wrap:wrap;font-weight:900;font-size:clamp(16px,1.6vw,32px)}
+.rules .bonus .ja,.rules .bonus .zh{display:inline;font-size:inherit;color:inherit;font-weight:900}
+.rules.m-both .bonus .zh::before{content:" / "}
+.rdots{display:flex;justify-content:center;gap:10px}
+.rdots button{width:14px;height:14px;border-radius:50%;border:0;background:var(--line);padding:0}
+.rdots button.on{background:var(--accent);width:34px;border-radius:999px}
+.rules .next .ja,.rules .next .zh{display:inline;font:inherit;color:inherit}
+.rules.m-both .next .zh{font-size:.7em;margin-left:.4em;font-family:var(--f-zh)}
+
+/* battle team picker */
+.pick{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.pick .lab{font-weight:900;font-size:clamp(14px,1.3vw,26px)}
+.tbtn{display:flex;align-items:center;gap:8px;font-weight:900;font-size:clamp(16px,1.5vw,30px);padding:.3em .8em;border-radius:999px;border:3px solid var(--tc);background:var(--surface);color:var(--ink)}
+.tbtn .dot{width:1em;height:1em;border-width:2px}
+.tbtn[aria-pressed="true"]{background:var(--tc);color:#fff}
+.tbtn.none{border-color:var(--line);color:var(--muted)}
+
+/* job roulette */
+.jobbox{display:flex;align-items:center;justify-content:center;gap:.5em;flex-wrap:wrap;background:var(--bg);border-radius:18px;padding:.5em;border:4px dashed var(--line)}
+.jobname{font-family:var(--f-disp);font-size:clamp(32px,4.4vw,88px);line-height:1.2}
+.jobsal{font-weight:900;font-size:clamp(16px,1.6vw,32px);color:var(--muted)}
+.jobbox.fixed{border-style:solid;border-color:var(--k-pay)}
+
+/* risk choice / shop */
+.choice{display:grid;grid-template-columns:1fr 1fr;gap:clamp(10px,1.2vw,22px)}
+.cbtn{font-family:var(--f-disp);font-size:clamp(24px,2.8vw,56px);padding:.5em .4em;border-radius:20px;border:0;color:#fff;display:flex;flex-direction:column;gap:.2em;align-items:center}
+.cbtn small{font-family:var(--f-body);font-weight:900;font-size:.45em;opacity:.95}
+.cbtn.safe{background:var(--ok)} .cbtn.bet{background:var(--k-risk)}
+.shop{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(10px,1.1vw,20px)}
+.prop{display:flex;flex-direction:column;gap:.2em;align-items:flex-start;text-align:left;padding:.6em .8em;border-radius:18px;border:3px solid var(--k-shop);background:var(--surface);color:var(--ink);font-size:clamp(14px,1.3vw,26px);font-weight:900;min-width:0}
+.prop .pn{font-family:var(--f-disp);font-weight:400;font-size:1.6em;line-height:1.2}
+.prop .pr{color:var(--k-shop)}
+.prop:hover:not(:disabled){background:color-mix(in srgb,var(--k-shop) 10%,var(--surface))}
+.prop:disabled{opacity:.4;cursor:default}
+.prop .lack{color:var(--ng);font-size:.8em}
+
+/* chance card */
+.ccard{perspective:1200px;display:flex;justify-content:center}
+.cin{position:relative;width:min(640px,100%);aspect-ratio:16/8;transition:transform .7s;transform-style:preserve-3d}
+.cin.flipped{transform:rotateY(180deg)}
+.cback,.cfront{position:absolute;inset:0;backface-visibility:hidden;border-radius:22px;display:grid;place-items:center;text-align:center;padding:.6em}
+.cback{background:repeating-linear-gradient(45deg,var(--k-chance) 0 18px,color-mix(in srgb,var(--k-chance) 80%,#fff) 18px 36px);color:#fff;font-family:var(--f-disp);font-size:clamp(40px,6vw,120px);border:6px solid #1b2233}
+.cfront{transform:rotateY(180deg);background:#fff7e6;color:#1b2233;border:6px solid var(--k-chance);font-weight:900;font-size:clamp(22px,2.6vw,52px);line-height:1.4;text-wrap:balance}
+
+/* results */
+.rank{display:flex;flex-direction:column;gap:10px;margin:0;padding:0;list-style:none}
+.rank li{display:grid;grid-template-columns:auto auto minmax(0,1fr) auto;align-items:center;gap:14px;background:var(--bg);border-radius:14px;padding:.4em .8em;font-size:clamp(18px,2vw,40px);font-weight:900}
+.rank .pl{font-family:var(--f-disp);font-weight:400;width:2.2em}
+.rank .title{display:inline-block;font-size:.55em;background:var(--ink);color:var(--surface);border-radius:6px;padding:0 .4em;margin-left:.4em;vertical-align:middle}
+.rank small{display:block;font-size:.5em;color:var(--muted)}
+.rank .tot{text-align:right}
+.rank .tot .money{font-size:1em;display:block}
+.rank li:first-child{background:var(--goal);color:var(--tile-ink)}
+.rank li:first-child small{color:#5a4a00}
+.bonus{display:flex;flex-wrap:wrap;gap:8px}
+.bonus span{background:var(--bg);border-radius:10px;padding:.2em .7em;font-weight:900;font-size:clamp(14px,1.3vw,26px);font-variant-numeric:tabular-nums}
+.bonus span.me{background:var(--goal);color:var(--tile-ink)}
+
+/* level choice */
+.lvl{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:clamp(10px,1.2vw,22px)}
+.lvbtn{display:flex;flex-direction:column;align-items:center;gap:.15em;border:0;border-radius:20px;padding:.45em .4em;background:var(--lc);color:#fff;font-family:var(--f-disp);font-size:clamp(34px,4.2vw,84px);line-height:1.1}
+.lvbtn small{font-family:var(--f-body);font-weight:900;font-size:.32em;opacity:.95}
+.lvtag{background:var(--lc);color:#fff;border-radius:8px;padding:2px 10px;font-family:var(--f-disp);font-weight:400;font-size:.85em}
+
+/* save slots */
+.svlist{display:flex;flex-direction:column;gap:10px}
+.sv{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:clamp(10px,1.2vw,22px);background:var(--bg);border-radius:16px;padding:.7em 1em;border:3px solid transparent}
+.sv.cur{border-color:var(--accent)}
+.sv .svn{font-family:var(--f-disp);font-size:clamp(20px,2vw,40px);line-height:1.1;text-align:center}
+.sv .svn small{display:block;font-family:var(--f-body);font-weight:900;font-size:.45em;color:var(--muted)}
+.sv .svi{font-weight:900;font-size:clamp(14px,1.3vw,26px);min-width:0}
+.sv .svi small{display:block;color:var(--muted);font-size:.75em;font-weight:700}
+.sv .svb{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.sv .svb button{font-family:var(--f-disp);font-size:clamp(15px,1.3vw,26px);border-radius:999px;padding:.35em 1em;border:3px solid var(--ink);background:var(--ink);color:var(--surface)}
+.sv .svb button.alt{background:transparent;color:var(--ink);border-color:var(--line)}
+.sv .svb button.warn{border-color:var(--ng);color:var(--ng);background:transparent}
+.chk{display:inline-flex;align-items:center;gap:4px;font-weight:900}
+.chk input{width:1.1em;height:1.1em;accent-color:var(--accent)}
+
+@media (max-width:900px){
+  html,body{height:auto}
+  .app{grid-template-columns:1fr;height:auto}
+  .panel{overflow:visible}
+  .board{grid-template-rows:none;grid-auto-rows:minmax(88px,auto)}
+  .wheel{width:min(70vw,260px)}
+  .opts,.choice,.shop{grid-template-columns:1fr}
+  .sv{grid-template-columns:1fr}
+  .parts{grid-template-columns:1fr 1fr}
+  .parts.three{grid-template-columns:1fr}
+  .ritem.rkind{grid-template-columns:1fr}
+  .bcard{grid-template-columns:1fr}
+  .betrow{grid-template-columns:1fr 1fr}
+  .betrow .bn{grid-column:1/-1}
+  .rbody.cols{grid-template-columns:1fr}
+  .sv .svb{justify-content:flex-start}
+}
+@media (prefers-reduced-motion:reduce){.gatebtn{animation:none}.bpic svg{animation:none}.tok.now{animation:none}.card,.toast{animation:none}.tile{transition:none}.cin{transition:none}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="board" id="board" aria-label="すごろくの盤"></div>
+  <aside class="panel">
+    <h1>JLPT人生すごろく<small>文法と語彙で、総資産いちばんを目指せ</small></h1>
+    <div class="turn"><span class="dot" id="turnDot"></span><div><div class="lab">いまの番</div><div class="nm" id="turnName"></div></div></div>
+    <div class="clock" id="clock" hidden><span class="lab">授業の残り</span><span class="cnum" id="cnum">0:00</span><button type="button" id="clockStop">止める</button></div>
+    <div class="wheelbox">
+      <svg class="wheel" viewBox="-112 -118 224 230" aria-hidden="true">
+        <g id="wheelG"></g>
+        <circle r="16" fill="var(--surface)" stroke="var(--ink)" stroke-width="4"></circle>
+        <path d="M0 -92 L-12 -116 L12 -116 Z" fill="var(--accent)" stroke="var(--ink)" stroke-width="3" stroke-linejoin="round"></path>
+      </svg>
+      <button class="spin" id="spinBtn" type="button">ルーレットを回す</button>
+      <div class="result" id="spinRes" aria-live="polite">スペースキーで回す・止める</div>
+    </div>
+    <div class="score"><div class="cap"><span>チーム</span><span>総資産</span></div><div id="score" class="score"></div></div>
+    <p class="savestat" id="saveStat">まだセーブしていません</p>
+    <div class="tools"><button class="ghost" id="rulesBtn" type="button">ルール説明</button><button class="ghost" id="missBtn" type="button">まちがえた問題</button><button class="ghost" id="editBtn" type="button">問題をつくる</button></div>
+    <details>
+      <summary>設定とルール</summary>
+      <div class="set">
+        <div class="seg" id="countSeg"><span>チーム数</span></div>
+        <div class="names" id="names"></div>
+        <div class="seg"><span>効果音</span><button type="button" id="sndOn">オン</button><button type="button" id="sndOff">オフ</button></div>
+        <div class="seg" id="lvSeg"><span>出題レベル</span></div>
+        <div class="seg" id="qtSeg"><span>回答の制限時間</span></div>
+        <div class="seg" id="bombSeg"><span>貧乏神</span></div>
+        <div class="seg" id="stealSeg"><span>横取りチャンス</span></div>
+        <div class="seg" id="betSeg"><span>予想ベット</span></div>
+        <div class="seg" id="halfSeg"><span>助っ人「50:50」</span></div>
+        <div class="seg" id="askSeg"><span>助っ人「友だちに聞く」</span></div>
+        <div class="seg" id="sorrySeg"><span>おわびチャレンジ</span></div>
+        <div class="seg" id="readSeg"><span>音読チャレンジ</span></div>
+        <div class="seg" id="readThemeSeg"><span>音読マスの文章</span></div>
+        <div class="seg" id="unitSeg"><span>お金の単位</span><button type="button" id="unitOku">桃鉄ふう（億円）</button><button type="button" id="unitReal">現実的（万円）</button></div>
+        <div class="seg" id="talkSeg"><span>会話チャレンジの場面</span></div>
+        <div class="seg" id="layoutSeg"><span>マスの並び</span><button type="button" id="layFixed">いつもと同じ</button><button type="button" id="layRand">ランダム</button><button type="button" class="ghost" id="layShuffle">並べ直す</button></div>
+        <div class="seg"><span>授業の残り時間</span><input type="number" id="classMin" min="1" max="240" value="30" style="width:4.5em;font:inherit;font-weight:700;padding:4px 6px;border-radius:8px;border:2px solid var(--line);background:var(--bg);color:var(--ink)">分<button type="button" class="ghost" id="classStart">スタート</button></div>
+        <div class="seg"><span>マスの数</span><span id="lenNow"></span><button type="button" class="ghost" id="shortenBtn">短くする</button><button type="button" class="ghost" id="extendBtn">長くする</button></div>
+        <div class="seg"><button class="ghost" id="slotBtn" type="button">セーブデータを選ぶ</button></div>
+        <div class="seg"><button class="ghost" id="endBtn" type="button">ここで結果発表</button><button class="ghost" id="resetBtn" type="button">最初からやり直す</button></div>
+        <p class="hint">勝ち負けは最後の総資産（所持金＋物件の値段）で決まります。所持金がマイナスになると借金です。問題マスではレベル（N3・N2・N1）を選べて、レベルが高いほど賞金もペナルティも大きくなります。「2マス進む」「3マス戻る」のマスや、先生が相手の役をする「会話チャレンジ」「面接」のマスもあります。悪いことが起きるマスでは、上手に謝れたら損が減ります（おわびチャレンジ）。問題をまちがえると、ほかのチームが横取りできます（設定でなしにもできます）。貧乏神は、ゲームの途中であらわれていちばんお金持ちのチームにつき、そのチームの番が終わるたびにいたずらをします。ほかのチームのいるマスを通ると押しつけられます。早くゴールしたチームほど大きなボーナスがもらえます（1着がいちばん多い）。給料日のマスを通ると、給料と物件の収益が入ります。<br>授業の残り時間が0になると、そのターンが終わったところで自動で結果発表になります。マスの数は18〜54マスから選べます。「マスの並び」をランダムにすると、ステージの中でマスの順番と問題の種類が入れかわります。まだだれもゴールしていなければ、ゲームの途中でも「短くする」「長くする」で変えられます。<br>ターンが終わるたびに、選んだセーブデータへ自動でセーブされます。チーム数で「ソロ」を選ぶと、1人で遊べます（早押し対決はふつうの問題になり、結果では自己ベストと比べます）。「音読チャレンジ」は、結婚・うれしいイベント・物件のマスで、読みがなのない文を読むものです。<br>キー操作：スペース＝回す・止める／1〜4＝答える</p>
+      </div>
+    </details>
+  </aside>
+</div>
+<div class="ov" id="ov" hidden><div class="card" id="card"></div></div>
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+<script>
+const STAGES=[
+  {n:'学生時代',c:'var(--st1)'},{n:'就職',c:'var(--st2)'},{n:'結婚・家族',c:'var(--st3)'},
+  {n:'働きざかり',c:'var(--st4)'},{n:'老後',c:'var(--st5)'},{n:'第二の人生',c:'var(--st6)'},{n:'伝説の人生',c:'var(--st7)'},{n:'ゴール',c:'var(--goal)'}];
+const QCAT={g:{n:'文法',c:'var(--k-g)'},v:{n:'語彙',c:'var(--k-v)'},o:{n:'並べ替え',c:'var(--k-o)'}};
+const KIND={
+  job:{n:'止まれ・職業',c:'var(--k-stop)'}, marry:{n:'止まれ・結婚',c:'var(--k-stop)'}, shop:{n:'物件',c:'var(--k-shop)'},
+  chance:{n:'チャンス',c:'var(--k-chance)'}, battle:{n:'早押し対決',c:'var(--k-battle)'}, risk:{n:'勝負する？',c:'var(--k-risk)'},
+  fwd:{n:'進む',c:'var(--k-fwd)'}, back:{n:'戻る',c:'var(--k-back)'}, iv:{n:'面接',c:'var(--k-iv)'},
+  talk:{n:'会話',c:'var(--k-iv)'}, read:{n:'音読チャレンジ',c:'var(--k-read)'}, sorry:{n:'おわびチャレンジ',c:'var(--k-back)'}};
+// t: start / q (qc = question category) / e (event) / job / marry / shop / chance / battle / risk / goal ; pay = payday when passed
+// Longer boards append whole stages before the goal, so every square keeps its number when the board is extended mid-game.
+const BASE_TILES=[
+ {s:0,t:'start',l:'スタート'},
+ {s:0,t:'iv',iv:'uni',l:'大学の面接'},
+ {s:0,t:'iv',iv:'arbeit',l:'アルバイトの面接'},
+ {s:0,t:'chance',l:'チャンス'},
+ {s:0,t:'read',l:'音読チャレンジ'},
+ {s:0,t:'battle',l:'学園祭クイズ大会'},
+ {s:1,t:'job',l:'就職活動'},
+ {s:1,t:'q',qc:'o',l:'はじめての出張',a:3,pay:1},
+ {s:1,t:'shop',l:'副業を始める'},
+ {s:1,t:'fwd',n:2,l:'電車に間に合った',d:'ダッシュで電車に飛び乗った！'},
+ {s:1,t:'q',qc:'g',l:'大事なプレゼン',a:4},
+ {s:1,t:'talk',scene:'any',l:'会話チャレンジ'},
+ {s:2,t:'marry',l:'結婚'},
+ {s:2,t:'q',qc:'v',l:'新居さがし',a:4},
+ {s:2,t:'e',l:'子どもが生まれた',a:3,d:'みんなからお祝いをもらった',pay:1},
+ {s:2,t:'shop',l:'投資のチャンス'},
+ {s:2,t:'talk',scene:'any',l:'会話チャレンジ'},
+ {s:2,t:'risk',l:'資格に挑戦'},
+ {s:3,t:'read',l:'音読チャレンジ'},
+ {s:3,t:'e',l:'車が故障',a:-3,d:'修理代がかかった…'},
+ {s:3,t:'battle',l:'海外支社の対決',pay:1},
+ {s:3,t:'chance',l:'チャンス'},
+ {s:3,t:'shop',l:'不動産屋'},
+ {s:3,t:'risk',l:'株に挑戦'},
+ {s:4,t:'talk',scene:'any',l:'会話チャレンジ'},
+ {s:4,t:'e',l:'世界一周旅行',a:-3,d:'思い出はプライスレス',pay:1},
+ {s:4,t:'back',n:3,l:'道に迷った',d:'スマホの電池が切れてしまった…'},
+ {s:4,t:'battle',l:'町内クイズ大会'},
+ {s:4,t:'q',qc:'o',l:'人生をふり返る',a:5}];
+const EXT_TILES=[[
+ {s:5,t:'iv',iv:'uni',l:'大学院の面接'},
+ {s:5,t:'e',l:'退職金が出た',a:6,d:'長年おつかれさまでした！'},
+ {s:5,t:'fwd',n:2,l:'タクシーで移動',d:'お金に余裕があるので楽ちん！'},
+ {s:5,t:'shop',l:'起業のチャンス'},
+ {s:5,t:'read',l:'音読チャレンジ',pay:1},
+ {s:5,t:'battle',l:'シニア将棋大会'},
+ {s:5,t:'risk',l:'ベンチャー投資'},
+ {s:5,t:'e',l:'腰を痛めた',a:-3,d:'整体に通うことに…'},
+ {s:5,t:'q',qc:'o',l:'自伝を書く',a:5},
+ {s:5,t:'chance',l:'チャンス'},
+ {s:5,t:'q',qc:'g',l:'海外移住の手続き',a:5,pay:1},
+ {s:5,t:'battle',l:'世代対抗クイズ'}],[
+ {s:6,t:'talk',scene:'any',l:'会話チャレンジ'},
+ {s:6,t:'shop',l:'リゾート開発'},
+ {s:6,t:'back',n:3,l:'パスポートを忘れた',d:'空港から家まで取りに帰る…'},
+ {s:6,t:'e',l:'本がベストセラーに',a:8,d:'印税がたくさん入った！',pay:1},
+ {s:6,t:'read',l:'音読チャレンジ'},
+ {s:6,t:'risk',l:'宇宙旅行に挑戦'},
+ {s:6,t:'battle',l:'全国クイズ選手権'},
+ {s:6,t:'e',l:'詐欺にあった',a:-6,d:'うまい話には気をつけよう…'},
+ {s:6,t:'q',qc:'g',l:'名誉市民に選ばれる',a:6},
+ {s:6,t:'chance',l:'チャンス'},
+ {s:6,t:'q',qc:'v',l:'孫に昔話をする',a:5,pay:1},
+ {s:6,t:'battle',l:'伝説の最終決戦'}]];
+const GOAL_TILE={s:7,t:'goal',l:'ゴール'};
+const SHORT_TILES={
+18:[
+ {s:0,t:'start',l:'スタート'},
+ {s:0,t:'iv',iv:'uni',l:'大学の面接'},
+ {s:0,t:'fwd',n:2,l:'近道を見つけた',d:'学校までの近道を発見！'},
+ {s:1,t:'job',l:'就職活動'},
+ {s:1,t:'q',qc:'o',l:'はじめての出張',a:3,pay:1},
+ {s:1,t:'shop',l:'副業を始める'},
+ {s:2,t:'marry',l:'結婚'},
+ {s:2,t:'q',qc:'v',l:'新居さがし',a:4},
+ {s:2,t:'talk',scene:'any',l:'会話チャレンジ'},
+ {s:2,t:'e',l:'子どもが生まれた',a:3,d:'みんなからお祝いをもらった',pay:1},
+ {s:3,t:'back',n:3,l:'忘れ物をした',d:'大事な書類を家に忘れた…'},
+ {s:3,t:'shop',l:'不動産屋'},
+ {s:3,t:'read',l:'音読チャレンジ'},
+ {s:3,t:'chance',l:'チャンス'},
+ {s:4,t:'battle',l:'町内クイズ大会'},
+ {s:4,t:'e',l:'世界一周旅行',a:-3,d:'思い出はプライスレス',pay:1},
+ {s:4,t:'q',qc:'o',l:'人生をふり返る',a:5}],
+24:[
+ {s:0,t:'start',l:'スタート'},
+ {s:0,t:'iv',iv:'uni',l:'大学の面接'},
+ {s:0,t:'iv',iv:'arbeit',l:'アルバイトの面接'},
+ {s:0,t:'fwd',n:2,l:'近道を見つけた',d:'学校までの近道を発見！'},
+ {s:0,t:'battle',l:'学園祭クイズ大会'},
+ {s:1,t:'job',l:'就職活動'},
+ {s:1,t:'q',qc:'o',l:'はじめての出張',a:3,pay:1},
+ {s:1,t:'shop',l:'副業を始める'},
+ {s:1,t:'talk',scene:'any',l:'会話チャレンジ'},
+ {s:2,t:'marry',l:'結婚'},
+ {s:2,t:'q',qc:'v',l:'新居さがし',a:4},
+ {s:2,t:'e',l:'子どもが生まれた',a:3,d:'みんなからお祝いをもらった',pay:1},
+ {s:2,t:'chance',l:'チャンス'},
+ {s:2,t:'risk',l:'資格に挑戦'},
+ {s:3,t:'read',l:'音読チャレンジ'},
+ {s:3,t:'shop',l:'不動産屋'},
+ {s:3,t:'battle',l:'海外支社の対決',pay:1},
+ {s:3,t:'e',l:'車が故障',a:-3,d:'修理代がかかった…'},
+ {s:4,t:'q',qc:'v',l:'定年退職',a:5},
+ {s:4,t:'back',n:3,l:'道に迷った',d:'スマホの電池が切れてしまった…'},
+ {s:4,t:'e',l:'世界一周旅行',a:-3,d:'思い出はプライスレス',pay:1},
+ {s:4,t:'risk',l:'株に挑戦'},
+ {s:4,t:'q',qc:'o',l:'人生をふり返る',a:5}]};
+const LENGTHS=[18,24,30,42,54];
+function buildTiles(len,seed){
+  let t;
+  if(SHORT_TILES[len])t=SHORT_TILES[len].concat([GOAL_TILE]);
+  else{t=[...BASE_TILES];if(len>=42)t=t.concat(EXT_TILES[0]);if(len>=54)t=t.concat(EXT_TILES[1]);t=t.concat([GOAL_TILE]);}
+  return seed?shuffleBoard(t,seed):t;
+}
+// seeded random so a saved game rebuilds the same shuffled board
+function seeded(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+// shuffles squares inside each life stage (start, goal and payday positions stay put) and re-rolls quiz categories
+function shuffleBoard(tiles,seed){
+  const out=tiles.map(x=>({...x}));
+  const payAt=out.map((x,i)=>x.pay?i:-1).filter(i=>i>=0);
+  out.forEach(x=>{delete x.pay;});
+  const groups={};
+  out.forEach((x,i)=>{if(x.t==='start'||x.t==='goal')return;(groups[x.s]=groups[x.s]||[]).push(i);});
+  for(const st in groups){
+    const idx=groups[st],r=seeded(seed*31+(+st)*977),items=idx.map(i=>out[i]);
+    for(let i=items.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[items[i],items[j]]=[items[j],items[i]];}
+    idx.forEach((pos,k)=>{out[pos]=items[k];});
+  }
+  const r2=seeded(seed*7+3);
+  out.forEach(x=>{if(x.t==='q')x.qc=['g','v','o'][Math.floor(r2()*3)];});
+  payAt.forEach(i=>{out[i].pay=1;});
+  return out;
+}
+const newSeed=()=>1+Math.floor(Math.random()*1e9);
+let TILES=buildTiles(30), LAST=TILES.length-1;
+const GOAL_BONUS=[20,12,7,4,2];
+const BATTLE_MISS=2;
+const LEVELS=['N3','N2','N1'];
+const LV={N3:{m:.5,c:'var(--lv3)',battle:3},N2:{m:1,c:'var(--lv2)',battle:5},N1:{m:2,c:'var(--lv1)',battle:8}};
+const winOf=(a,lv)=>Math.max(1,Math.round(a*LV[lv].m));
+const loseOf=(a,lv)=>-Math.max(1,Math.ceil(a*LV[lv].m/2));
+const QTIMES=[0,10,15,20,30];
+const GOOD_JOBS=[{n:'医者',sal:6},{n:'弁護士',sal:6},{n:'パイロット',sal:6},{n:'通訳',sal:5},{n:'ゲーム会社の社長',sal:7}];
+const NORMAL_JOBS=[{n:'会社員',sal:3},{n:'日本語教師',sal:3},{n:'コンビニ店員',sal:2},{n:'フリーター',sal:2},{n:'ユーチューバー',sal:2}];
+// properties: p = price (counted in total assets), r = income each payday
+// names follow the money mode so the prices stay believable
+const PROPS=[
+ {id:'tako',nk:'たこ焼きチェーン',nr:'たこ焼きの屋台',p:5,r:1},{id:'cafe',nk:'猫カフェチェーン',nr:'自動販売機3台',p:9,r:2},{id:'conv',nk:'コンビニ10店舗',nr:'月極駐車場',p:12,r:3},
+ {id:'school',nk:'日本語学校',nr:'中古のキッチンカー',p:16,r:4},{id:'apart',nk:'マンション1棟',nr:'地方の中古ワンルーム',p:20,r:5},{id:'onsen',nk:'温泉旅館',nr:'田舎の古民家（民泊）',p:28,r:7}]
+ .map(x=>Object.defineProperty(x,'n',{get(){return S&&S.unit==='real'?this.nr:this.nk;}}));
+const PROP=Object.fromEntries(PROPS.map(p=>[p.id,p]));
+const CHANCE=[
+ {t:'fwd',n:2,l:'近道を見つけた！<br>2マス進む'},
+ {t:'back',n:3,l:'忘れ物をした…<br>3マス戻る'},
+ {t:'skip',l:'かぜをひいた…<br>次の番は1回休み'},
+ {t:'double',l:'やる気満々！<br>次の問題は賞金2倍'},
+ {t:'collect',a:1,l:()=>`今日は誕生日！<br>全チームから${amt(1)}円ずつもらう`},
+ {t:'give',a:1,l:()=>`みんなにおごることに…<br>全チームに${amt(1)}円ずつ払う`},
+ {t:'again',l:'ラッキー！<br>もう一度ルーレットを回せる'},
+ {t:'rich',a:3,l:()=>`いちばんお金持ちのチームから<br>${amt(3)}円もらう`},
+ {t:'cash',a:4,l:()=>`財布を拾って交番に届けた。<br>お礼に${amt(4)}円もらう`},
+ {t:'storm',l:'台風が来た！<br>物件を1つ失う'},
+ {t:'boom',a:2,l:()=>`観光ブーム到来！<br>物件1つにつき${amt(2)}円もらう`},
+ {t:'oharai',l:'神社でおはらい！<br>貧乏神がついていたら、ほかのチームへ'}];
+
+/* ---------- questions (first option is always the correct one) ---------- */
+const INST={g:'（　）に入る最もよいものは？',yomi:'下線の言葉の読み方として最もよいものは？',kotoba:'（　）に入れるのに最もよいものは？',iikae:'下線の言葉に意味が最も近いものは？',o:'★に入る最もよいものは？'};
+const BANK={
+N3:{
+ g:[
+ ['この料理は辛＿て、食べられない。',['すぎ','そう','らしく','ように'],'〜すぎる＝程度をこえている'],
+ ['先生に作文を直して＿。',['もらった','あげた','くれた','やった'],'（人）に〜てもらう'],
+ ['嫌いなのに、母に野菜を食べ＿。',['させられた','させた','られた','させてあげた'],'使役受身＝したくないことをさせられる'],
+ ['宿題をやって＿、遊びに行きなさい。',['から','ので','ながら','ために'],'〜てから＝〜したあとで'],
+ ['電話をし＿、運転してはいけません。',['ながら','てから','たら','ずに'],'〜ながら＝二つのことを同時に'],
+ ['この映画は、見れば見る＿面白い。',['ほど','ばかり','だけ','まで'],'〜ば〜ほど＝〜するとますます'],
+ ['パーティーに来られる＿どうか、教えてください。',['か','と','のを','ように'],'〜かどうか'],
+ ['先生の話＿よると、来週テストがあるそうだ。',['に','で','を','と'],'〜によると＝情報の出どころ'],
+ ['寝る＿に、歯をみがきましょう。',['前','後','間','うち'],'〜る前に'],
+ ['彼は日本人＿、日本語がとても上手だ。',['のように','らしい','そうに','みたい'],'〜のように＝〜と同じように'],
+ ['日本語が話せる＿、毎日練習しています。',['ように','ために','ことに','ところに'],'可能形＋ように＝目標'],
+ ['このかばんは軽くて、持ち＿。',['やすい','にくい','すぎる','かける'],'〜やすい＝簡単に〜できる'],
+ ['ちょうど今、家を出る＿です。',['ところ','ばかり','ほど','まま'],'〜るところ＝もうすぐ〜する'],
+ ['先週日本に来た＿なので、まだ何もわからない。',['ばかり','まま','ほど','うち'],'〜たばかり＝〜してから時間がたっていない'],
+ ['電気をつけた＿寝てしまった。',['まま','ばかり','ところ','ながら'],'〜たまま＝その状態で'],
+ ['彼が来る＿、ここで待ちましょう。',['まで','までに','うちに','ながら'],'まで＝続く動作の終わり／までに＝期限'],
+ ['この問題は簡単だから、子ども＿わかる。',['でも','しか','ばかり','ほど'],'〜でも＝〜も（例として）'],
+ ['もう少し早く家を出れ＿、遅刻しなかったのに。',['ば','ても','ながら','のに'],'〜ば〜のに＝後悔'],
+ ['雨が降っ＿、試合は行います。',['ても','たら','ては','たり'],'〜ても＝その場合でも'],
+ ['窓が開けて＿ので、少し寒い。',['ある','いる','おく','しまう'],'〜てある＝だれかがした結果が残っている']],
+ yomi:[
+ ['今日は〔都合〕が悪い。',['つごう','とごう','つうごう','とうごう'],'都合（つごう）'],
+ ['彼女はいつも〔表情〕が明るい。',['ひょうじょう','ひょうしょう','ほうじょう','ひょじょう'],'表情（ひょうじょう）'],
+ ['ホテルに荷物を〔預ける〕。',['あずける','あつける','さずける','とどける'],'預ける（あずける）'],
+ ['〔営業〕時間を確認する。',['えいぎょう','えいごう','えぎょう','けいぎょう'],'営業（えいぎょう）'],
+ ['暑くて〔額〕に汗をかいた。',['ひたい','あご','ほお','くび'],'額（ひたい）']],
+ kotoba:[
+ ['遅れてきた友達に、＿の理由を聞いた。',['遅刻','欠席','早退','出席'],'遅刻＝時間に遅れること'],
+ ['道が＿いて、なかなか進まない。',['混んで','空いて','晴れて','冷えて'],'混む＝人や車が多い'],
+ ['試験に合格して、とても＿。',['うれしかった','くやしかった','さびしかった','こわかった'],'うれしい'],
+ ['この薬は、食事の＿に飲んでください。',['後','間','中','先'],'食事の後（あと）'],
+ ['部屋が暗いので、電気を＿ください。',['つけて','けして','あけて','しめて'],'電気をつける⇔けす']],
+ iikae:[
+ ['〔たまに〕映画を見ます。',['ときどき','いつも','よく','ぜんぜん'],'たまに＝ときどき（回数は少ない）'],
+ ['彼は〔うそをついた〕。',['本当ではないことを言った','大きな声で言った','何も言わなかった','何度も言った'],'うそをつく'],
+ ['〔くわしく〕説明してください。',['細かく','簡単に','早く','大きな声で'],'くわしく＝細かいところまで'],
+ ['この部屋は〔せまい〕。',['広くない','明るくない','きれいではない','静かではない'],'せまい⇔広い'],
+ ['〔さっき〕田中さんが来ました。',['少し前に','少しあとで','毎日','はじめて'],'さっき＝少し前']],
+ o:[
+ {q:'私の＃です。',a:['趣味は','写真を','撮る','こと'],s:2},
+ {q:'駅まで＃、雨が降ってきた。',a:['歩いて','いる','とちゅうで','急に'],s:2},
+ {q:'この本は＃やさしい。',a:['子ども','でも','読める','くらい'],s:1},
+ {q:'母が＃おいしかった。',a:['作って','くれた','ケーキは','とても'],s:1},
+ {q:'明日は＃と思います。',a:['雨が','降る','かも','しれない'],s:2},
+ {q:'日本語が＃練習しています。',a:['上手に','話せる','ように','毎日'],s:3}]},
+N2:{
+ g:[
+ ['準備ができ＿、出発しましょう。',['次第','とたん','うちに','あげく'],'〜次第＝〜したらすぐに'],
+ ['約束した＿、最後までやるべきだ。',['からには','ものの','くせに','とたんに'],'〜からには＝〜のだから当然'],
+ ['一生懸命勉強した＿、試験に落ちてしまった。',['ものの','からには','以上','次第'],'〜ものの＝〜けれども'],
+ ['彼は医者の＿、自分の健康には無関心だ。',['くせに','ついでに','ばかりに','ことに'],'〜くせに＝〜のに（非難の気持ち）'],
+ ['買い物に行った＿、銀行にも寄った。',['ついでに','たびに','ばかりに','ところに'],'〜ついでに＝〜する機会に一緒に'],
+ ['さんざん迷った＿、結局何も買わなかった。',['あげく','ついでに','次第','からには'],'〜たあげく＝いろいろ〜した末に'],
+ ['この仕事は経験＿、誰でも応募できます。',['を問わず','に沿って','に基づいて','に反して'],'〜を問わず＝〜に関係なく'],
+ ['調査の結果＿、新しい商品を開発した。',['に基づいて','に反して','をめぐって','にわたって'],'〜に基づいて＝〜をもとにして'],
+ ['3日間＿、国際会議が行われた。',['にわたって','に沿って','につれて','に応じて'],'〜にわたって＝〜の期間・範囲全体で'],
+ ['年をとる＿、体力が落ちてくる。',['につれて','ばかりか','からには','以上'],'〜につれて＝一方の変化に合わせて'],
+ ['彼は英語＿、中国語も話せる。',['ばかりか','くせに','ものの','あまり'],'〜ばかりか＝〜だけでなく'],
+ ['心配の＿、夜も眠れなかった。',['あまり','ついでに','とおり','次第'],'〜あまり＝〜すぎて'],
+ ['上司に頼まれたので、やら＿。',['ざるを得ない','っこない','ずじまいだ','ずにすむ'],'〜ざるを得ない＝しかたなく〜する'],
+ ['こんな難しい問題、私に解け＿よ。',['っこない','ざるを得ない','がちだ','ずにはいられない'],'〜っこない＝絶対に〜ない（話し言葉）'],
+ ['このままでは大きな事故が起こり＿。',['かねない','っこない','ようがない','がたい'],'〜かねない＝〜かもしれない（悪いこと）'],
+ ['冬は風邪をひき＿なので、気をつけてください。',['がち','っぽい','げ','まみれ'],'〜がち＝〜しやすい（よくない傾向）'],
+ ['彼女は何か言いた＿な顔をしていた。',['げ','がち','っぽい','まみれ'],'〜げ＝〜そうな様子'],
+ ['部長の許可を得た＿で、行動してください。',['うえ','ついで','とたん','あげく'],'〜たうえで＝〜してから、それをもとに'],
+ ['窓を開けた＿、強い風が入ってきた。',['とたん','次第','からには','うえは'],'〜たとたん＝〜したらすぐ（予想外のこと）'],
+ ['社長の命令である＿、従わなければならない。',['以上','ものの','ついでに','とたん'],'〜以上＝〜のだから当然'],
+ ['彼が来る＿来ない＿、パーティーは始めます。',['にしろ','とか','やら','につけ'],'〜にしろ〜にしろ＝どちらの場合でも'],
+ ['試験に合格できたのは、先生の＿だ。',['おかげ','せい','ばかり','わけ'],'〜おかげ＝よい結果の理由'],
+ ['この料理は見た目の＿、味はおいしい。',['わりに','ばかりに','ついでに','うえで'],'〜わりに＝〜から考えられるのとちがって'],
+ ['社会の変化＿、働き方も変わってきた。',['に伴って','に反して','に限って','をめぐって'],'〜に伴って＝〜と一緒に変化して'],
+ ['予想＿、試験はとても簡単だった。',['に反して','に基づいて','に伴って','にわたって'],'〜に反して＝〜とは逆に'],
+ ['環境問題＿、さまざまな意見が出された。',['をめぐって','にわたって','に反して','に伴って'],'〜をめぐって＝〜を中心に（議論・対立）'],
+ ['若い＿、いろいろな国に行ったほうがいい。',['うちに','とたんに','次第','あげく'],'〜うちに＝〜の間に（あとではできない）'],
+ ['この本は、読めば＿面白くなる。',['読むほど','読むばかりか','読んだものの','読むからには'],'〜ば〜ほど＝〜するとますます'],
+ ['忙しくて、寝る時間＿ない。',['さえ','こそ','ほど','ばかり'],'〜さえ＝〜も（極端な例）'],
+ ['天気がいいから、散歩に行かずに＿。',['はいられない','を得ない','かねない','たまらない'],'〜ずにはいられない＝どうしても〜してしまう'],
+ ['彼の態度は、反省している＿とても見えない。',['ようには','からには','ものには','ばかりには'],'〜ようには見えない'],
+ ['彼は疲れていた＿、すぐに寝てしまった。',['とみえて','からには','ものの','ついでに'],'〜とみえて＝様子から考えると〜らしく'],
+ ['母が作る料理＿おいしいものはない。',['ほど','さえ','こそ','ばかり'],'〜ほど〜ものはない＝いちばん〜'],
+ ['客の要望＿、サービス内容を変える。',['に応じて','に反して','をめぐって','にわたって'],'〜に応じて＝〜に合わせて'],
+ ['先生が退職する＿、送別会が開かれた。',['にあたって','につれて','に反して','によって'],'〜にあたって＝〜する特別な時に'],
+ ['合格の知らせを聞いて、うれしくて＿。',['たまらない','かねない','っこない','ざるを得ない'],'〜てたまらない＝とても〜']],
+ yomi:[
+ ['〔貴重〕な経験をした。',['きちょう','きじょう','きっちょう','きしょう'],'貴重（きちょう）＝とても大切で、めったにない'],
+ ['旅行を来月に〔延期〕した。',['えんき','えいき','えんご','えっき'],'延期（えんき）＝予定をあとにのばす'],
+ ['説明が〔抽象〕的でわかりにくい。',['ちゅうしょう','ちゅうぞう','ゆうしょう','ちゅしょう'],'抽象（ちゅうしょう）⇔ 具体'],
+ ['出かける前に身なりを〔整える〕。',['ととのえる','そろえる','おさえる','かかえる'],'整える（ととのえる）'],
+ ['台風で大きな〔損害〕を受けた。',['そんがい','そんかい','そうがい','しんがい'],'損害（そんがい）'],
+ ['友達と〔頻繁〕に連絡をとる。',['ひんぱん','ひんばん','びんぱん','ひんはん'],'頻繁（ひんぱん）＝何度も'],
+ ['栄養が〔偏らない〕ように気をつける。',['かたよらない','かたむらない','へだたらない','かたまらない'],'偏る（かたよる）'],
+ ['彼は〔肯定〕も否定もしなかった。',['こうてい','こってい','きょうてい','こうでい'],'肯定（こうてい）⇔ 否定'],
+ ['店から支払いを〔催促〕された。',['さいそく','さいぞく','さいしょく','ざいそく'],'催促（さいそく）＝早くするように求める'],
+ ['〔幼い〕ころの写真を見つけた。',['おさない','おとない','わかない','ようない'],'幼い（おさない）']],
+ kotoba:[
+ ['会議の資料を人数分＿しておいてください。',['用意','用心','用件','用途'],'用意＝準備'],
+ ['新しい環境にやっと＿してきた。',['適応','適用','適切','適度'],'適応＝まわりに合わせて変わる'],
+ ['彼は約束の時間に＿遅れたことがない。',['一度も','一応','一気に','一斉に'],'一度も〜ない'],
+ ['雨で試合が＿になった。',['中止','停止','禁止','防止'],'中止＝予定していたことをやめる'],
+ ['悩みを友達に話したら、気持ちが＿した。',['すっきり','うっかり','ぎっしり','こっそり'],'すっきり＝気持ちがさわやかになる'],
+ ['部屋が＿していて、何がどこにあるかわからない。',['ごちゃごちゃ','ぴかぴか','すらすら','ぐっすり'],'ごちゃごちゃ＝散らかっている'],
+ ['この店は料理の＿が多くて、食べきれない。',['量','額','幅','値'],'量＝どのくらいたくさんか'],
+ ['彼は＿な性格で、誰とでもすぐ仲良くなる。',['社交的','消極的','神経質','頑固'],'社交的＝人づきあいが上手'],
+ ['地震の時は、エレベーターが＿に止まるようになっている。',['自動的','積極的','個人的','主観的'],'自動的＝機械が自分で動く'],
+ ['彼の話は＿がなくて、何が言いたいのかわからない。',['まとまり','ゆとり','おしゃれ','にぎわい'],'まとまり＝全体が整理されていること']],
+ iikae:[
+ ['〔あらかじめ〕連絡してください。',['前もって','あとで','すぐに','必ず'],'あらかじめ＝前もって'],
+ ['彼は〔たびたび〕遅刻する。',['何度も','一度も','絶対に','わざと'],'たびたび＝何度も'],
+ ['〔ささやかな〕プレゼントを用意した。',['小さな','高価な','大切な','珍しい'],'ささやか＝小さくて、ひかえめ'],
+ ['一日中歩いて〔くたびれた〕。',['疲れた','怒った','驚いた','喜んだ'],'くたびれる＝疲れる'],
+ ['雨の日は出かけるのが〔おっくうだ〕。',['めんどうだ','楽しみだ','心配だ','危険だ'],'おっくう＝めんどうで気が進まない'],
+ ['意見を〔ストレートに〕言う。',['はっきりと','静かに','何度も','小さな声で'],'ストレートに＝遠回しにせず、はっきり'],
+ ['知らない人に〔いきなり〕話しかけられた。',['突然','ゆっくり','何度も','親切に'],'いきなり＝突然'],
+ ['あの人は本当に〔ずうずうしい〕。',['厚かましい','恥ずかしい','おとなしい','まじめだ'],'ずうずうしい＝厚かましい'],
+ ['〔あいまいな〕返事をされて困った。',['はっきりしない','早すぎる','ていねいな','冷たい'],'あいまい＝はっきりしない'],
+ ['新しい課題に〔取り組んで〕いる。',['一生懸命やって','あきらめて','説明して','頼んで'],'取り組む＝一生懸命にやる']],
+ o:[
+ {q:'この仕事は、＃無理だと思う。',a:['経験の','ない','人','には'],s:1},
+ {q:'彼女は＃、泣き出してしまった。',a:['合格の','知らせを','聞いた','とたん'],s:2},
+ {q:'田中さんは＃、いつも遅刻してくる。',a:['会議の','時間を','知っている','くせに'],s:3},
+ {q:'この町は＃変わってきた。',a:['駅が','できる','につれて','少しずつ'],s:0},
+ {q:'資料が＃ください。',a:['届き','次第','すぐに','連絡して'],s:2},
+ {q:'父は＃、たばこをやめた。',a:['医者に','言われた','のを','きっかけに'],s:1},
+ {q:'このかばんは＃、とても丈夫だ。',a:['値段の','わりに','作りが','しっかりしていて'],s:3},
+ {q:'健康の＃にしている。',a:['ために','毎朝','30分','歩くよう'],s:2},
+ {q:'雨が＃、試合は行われた。',a:['降って','いた','にも','かかわらず'],s:0},
+ {q:'今回の失敗を＃がんばろう。',a:['生かして','次こそ','合格できる','ように'],s:1}]},
+N1:{
+ g:[
+ ['彼の話は、聞く＿値しない。',['に','を','が','で'],'〜に値する／値しない'],
+ ['社長の挨拶＿、パーティーが始まった。',['を皮切りに','に至っては','にひきかえ','ならでは'],'〜を皮切りに＝〜から始めて'],
+ ['本日の営業は午後8時＿終了いたします。',['をもって','を皮切りに','にかこつけて','ともなると'],'〜をもって＝〜で（区切り）'],
+ ['兄が優秀なの＿、弟は勉強が嫌いだ。',['にひきかえ','をもって','ならでは','いかんで'],'〜にひきかえ＝〜と比べて反対に'],
+ ['この味は、老舗＿だ。',['ならでは','ずくめ','まみれ','ごとき'],'〜ならでは＝〜だけにしかない'],
+ ['今年はいいこと＿の一年だった。',['ずくめ','まみれ','ならでは','ぐるみ'],'〜ずくめ＝〜ばかり'],
+ ['試験の結果＿、進学できるかどうかが決まる。',['いかんで','をもって','にひきかえ','ならでは'],'〜いかんで＝〜によって'],
+ ['彼は挨拶＿、部屋を出て行った。',['もそこそこに','をもって','ならでは','に即して'],'〜もそこそこに＝十分にしないで急いで'],
+ ['彼女は泣き＿声で話した。',['出さんばかりの','っぽい','かねない','ずくめの'],'〜んばかり＝今にも〜しそうな'],
+ ['雨が降ろう＿、試合は中止しない。',['が','ので','から','けれど'],'〜（よ）うが＝〜ても'],
+ ['子どもの病気が心配で、仕事＿。',['どころではない','までもない','に越したことはない','ずにはおかない'],'〜どころではない＝〜できる状況ではない'],
+ ['わざわざ行く＿。電話で十分だ。',['までもない','どころではない','にほかならない','に越したことはない'],'〜までもない＝〜する必要はない'],
+ ['準備は早い＿ことはない。',['に越した','にすぎない','をおいて','ともなく'],'〜に越したことはない＝〜のほうがいい'],
+ ['この仕事を任せられるのは、彼＿ほかにいない。',['をおいて','をもって','をよそに','ならでは'],'〜をおいて＝〜以外に'],
+ ['家族の心配＿、彼は危険な山に登った。',['をよそに','をおいて','にひきかえ','いかんで'],'〜をよそに＝気にしないで'],
+ ['この成功は、みんなの努力の結果＿。',['にほかならない','までもない','どころではない','ずにはおかない'],'〜にほかならない＝まさに〜だ'],
+ ['彼の失礼な態度には、怒り＿。',['を禁じ得ない','に越したことはない','までもない','にほかならない'],'〜を禁じ得ない＝気持ちを抑えられない'],
+ ['退院した＿、またすぐ無理をして入院した。',['かと思うと','ものを','までもなく','ともなると'],'〜たかと思うと＝〜したと思ったらすぐ'],
+ ['社長＿、毎日忙しいのは当然だ。',['ともなると','にひきかえ','をよそに','ならでは'],'〜ともなると＝〜という立場になると'],
+ ['ベルが鳴る＿、生徒は教室を飛び出した。',['が早いか','ものの','ばかりに','とは'],'〜が早いか＝〜するとすぐ']],
+ yomi:[
+ ['〔潔く〕負けを認めた。',['いさぎよく','いさましく','こころよく','すがすがしく'],'潔い（いさぎよい）'],
+ ['景気の悪化が〔懸念〕される。',['けねん','けんねん','けんえん','かねん'],'懸念（けねん）＝心配'],
+ ['状況を正確に〔把握〕する。',['はあく','はおく','ばあく','ひあく'],'把握（はあく）＝よく理解する'],
+ ['部屋にいい香りが〔漂って〕いる。',['ただよって','さまよって','うかがって','したがって'],'漂う（ただよう）'],
+ ['来月、大阪支社に〔赴任〕する。',['ふにん','ほにん','ふじん','とにん'],'赴任（ふにん）']],
+ kotoba:[
+ ['経営が＿して、会社は倒産寸前だ。',['悪化','悪用','悪意','悪口'],'悪化＝悪くなる'],
+ ['彼は＿な態度で、誰にでも親切だ。',['謙虚','横柄','強引','露骨'],'謙虚＝えらそうにしない'],
+ ['新しい法律が＿されるのは来年からだ。',['施行','施設','施工','試行'],'施行（しこう）＝法律が効力をもつ'],
+ ['予算が限られているので、計画を大幅に＿せざるを得ない。',['縮小','縮図','収縮','短縮'],'縮小＝規模を小さくする'],
+ ['長年の研究が＿、ついに新薬が完成した。',['実を結び','花を持たせ','手を焼き','腹を立て'],'実を結ぶ＝努力がよい結果になる']],
+ iikae:[
+ ['〔おびただしい〕数の人が集まった。',['非常に多い','少しの','珍しい','若い'],'おびただしい＝非常に多い'],
+ ['計画は〔ことごとく〕失敗した。',['全部','一部','何度も','やっと'],'ことごとく＝全部'],
+ ['新しい計画が〔頓挫した〕。',['途中でだめになった','予定通り進んだ','変更された','発表された'],'頓挫（とんざ）する＝途中でだめになる'],
+ ['〔うっとうしい〕天気が続く。',['いやな感じの','気持ちのいい','めずらしい','変わりやすい'],'うっとうしい＝重苦しくていやな'],
+ ['試合に向けて〔ひたすら〕練習した。',['それだけを一生懸命','時々','いやいや','友達と'],'ひたすら＝そのことだけを一心に']],
+ o:[
+ {q:'彼の言ったことは＃にすぎない。',a:['自分の','失敗を','ごまかす','言い訳'],s:2},
+ {q:'本日の＃いたします。',a:['説明会は','これ','をもって','終了'],s:1},
+ {q:'彼女は＃、黙っていた。',a:['何か','言いたげな','顔を','しながらも'],s:2},
+ {q:'親の＃留学を決めた。',a:['反対','を','よそに','彼は'],s:2},
+ {q:'この店の料理は＃味だ。',a:['老舗','ならでは','の','深い'],s:1},
+ {q:'ベルが＃、生徒たちは教室を飛び出した。',a:['鳴る','が','早いか','一斉に'],s:2}]}};
+/* ---------- additional questions (merged into BANK before the pools are built) ---------- */
+const MORE_Q={
+N3:{
+ g:[
+ ['テストの前なのに、弟は遊んで＿いる。',['ばかり','だけ','しか','ほど'],'〜てばかりいる＝そればかりしている'],
+ ['かぜを引か＿ように、手を洗いましょう。',['ない','なくて','ずに','なければ'],'〜ないように＝そうならないために'],
+ ['このパソコンは古くて、使い＿。',['にくい','やすい','たい','すぎ'],'〜にくい＝〜するのが難しい'],
+ ['彼女は、まるで子どもの＿笑った。',['ように','そうに','らしく','みたいな'],'まるで〜のように'],
+ ['先生がおっしゃった＿、宿題を出しました。',['とおりに','ために','ばかりに','うちに'],'〜とおりに＝言われたのと同じように'],
+ ['お金がない＿、旅行に行けない。',['ので','のに','けど','ても'],'〜ので＝理由'],
+ ['一生懸命頑張った＿、試験に落ちた。',['のに','ので','から','ため'],'〜のに＝予想と反対の結果'],
+ ['この部屋は、エアコンが＿あるから涼しい。',['つけて','つけ','ついて','つく'],'他動詞＋てある＝だれかがした結果'],
+ ['ドアが開いて＿。だれが開けたんだろう。',['いる','ある','おく','しまう'],'自動詞＋ている＝状態'],
+ ['旅行の前に、ホテルを予約して＿。',['おきます','います','あります','みせます'],'〜ておく＝前もって準備する'],
+ ['先生にほめ＿、うれしかった。',['られて','させて','させられて','させてもらって'],'受身形＝〜られる'],
+ ['道が込んでいた＿、約束の時間に遅れた。',['せいで','おかげで','ように','ところで'],'〜せいで＝悪い結果の原因'],
+ ['友達が起こしてくれた＿で、遅刻しなかった。',['おかげ','せい','くせ','わけ'],'〜おかげで＝よい結果の理由'],
+ ['明日、雨が降っ＿、試合は中止です。',['たら','ても','ので','のに'],'〜たら＝条件'],
+ ['ここでたばこを吸っては＿。',['いけません','いいです','かまいません','ください'],'〜てはいけない＝禁止'],
+ ['もう少しゆっくり話して＿か。',['いただけません','さしあげません','まいりません','おりません'],'〜ていただけませんか＝ていねいな依頼'],
+ ['先生、その荷物、私がお持ち＿。',['します','になります','されます','くださいます'],'お〜する＝謙譲語'],
+ ['社長はもう＿ました。',['お帰りになり','お帰りし','お帰りいたし','お帰りさせ'],'お〜になる＝尊敬語'],
+ ['寝る前に、日記を書く＿にしています。',['こと','もの','ところ','はず'],'〜ことにしている＝自分で決めた習慣'],
+ ['来月から、ジョギングをする＿にしました。',['こと','もの','はず','わけ'],'〜ことにする＝自分で決める'],
+ ['会議は3時に始まる＿になっています。',['こと','もの','わけ','はず'],'〜ことになっている＝予定・規則'],
+ ['家を出てから、財布を忘れた＿に気がついた。',['こと','もの','ところ','わけ'],'〜ことに気がつく'],
+ ['弟は宿題もし＿、ゲームばかりしている。',['ないで','なくて','なければ','ないと'],'〜ないで＝〜しないで、かわりに']],
+ yomi:[
+ ['友達を空港まで〔迎え〕に行く。',['むかえ','むかい','むけ','むこえ'],'迎える（むかえる）'],
+ ['毎朝、〔牛乳〕を飲む。',['ぎゅうにゅう','ぎゅにゅう','ぎゅうにゅ','ぎゅうじゅう'],'牛乳（ぎゅうにゅう）'],
+ ['駅の〔近所〕に住んでいる。',['きんじょ','きんしょ','ちかじょ','こんじょ'],'近所（きんじょ）'],
+ ['会議の〔資料〕をコピーする。',['しりょう','じりょう','しりょ','しりゅう'],'資料（しりょう）'],
+ ['机の上を〔片付ける〕。',['かたづける','かたつける','かだづける','へんづける'],'片付ける（かたづける）'],
+ ['電車が〔遅れて〕いる。',['おくれて','おそれて','おそくて','おこれて'],'遅れる（おくれる）']],
+ kotoba:[
+ ['風邪をひいて、熱が＿。',['出た','来た','付いた','起きた'],'熱が出る'],
+ ['夜遅くまで起きていたので、とても＿。',['眠い','痛い','うるさい','涼しい'],'眠い'],
+ ['暑いので、エアコンの温度を少し＿ください。',['下げて','落として','減らして','低くて'],'温度を下げる'],
+ ['大事な書類なので、なくさないように＿してください。',['注意','用意','決意','得意'],'注意する＝気をつける'],
+ ['このスープは味が＿ので、塩を少し入れた。',['うすい','こい','かたい','あつい'],'味がうすい＝味が弱い']],
+ iikae:[
+ ['〔もうすぐ〕夏休みだ。',['まもなく','やっと','ずっと','まだ'],'もうすぐ＝まもなく'],
+ ['この店は〔いつも〕込んでいる。',['常に','たまに','急に','すでに'],'いつも＝常に'],
+ ['〔急に〕雨が降ってきた。',['突然','だんだん','ゆっくり','しばらく'],'急に＝突然'],
+ ['かばんの中が〔からっぽ〕だ。',['何も入っていない','重い','新しい','汚れている'],'からっぽ＝中に何もない'],
+ ['〔しばらく〕待ってください。',['少しの間','ずっと','急いで','あとで'],'しばらく＝少しの間']],
+ o:[
+ {q:'私は＃です。',a:['日本の','アニメを','見るのが','好き'],s:2},
+ {q:'昨日は疲れていて、＃しまった。',a:['電気を','つけた','まま','寝て'],s:2},
+ {q:'この映画は＃と思います。',a:['子ども','でも','楽しめる','だろう'],s:1},
+ {q:'田中さんは＃ようです。',a:['かぜを','ひいて','学校を','休んだ'],s:2},
+ {q:'先生に＃しまった。',a:['宿題を','忘れた','ことを','注意されて'],s:2},
+ {q:'このかばんは＃便利です。',a:['軽くて','持ち','やすい','ので'],s:2},
+ {q:'日本語の＃です。',a:['勉強を','始めて','から','2年'],s:2},
+ {q:'明日の会議は＃ことになった。',a:['社長が','来られない','ので','中止する'],s:2},
+ {q:'私は＃が苦手です。',a:['人の','前で','話す','の'],s:2}]},
+N2:{
+ g:[
+ ['彼の話は、とても信じ＿。',['がたい','っぽい','がち','げ'],'〜がたい＝〜することが難しい'],
+ ['この量では、今日中には終わり＿。',['そうにない','ようにない','らしくない','みたいにない'],'〜そうにない＝〜しそうもない'],
+ ['住所がわからないので、連絡し＿。',['ようがない','がちだ','かねない','っぽい'],'〜ようがない＝方法がない'],
+ ['お忙しい＿、ありがとうございました。',['ところ','うちに','あまり','ばかりに'],'お忙しいところ＝相手が忙しいときに（お礼・おわび）'],
+ ['新しい駅ができた＿、町がにぎやかになった。',['ことで','ことに','ものの','くせに'],'〜ことで＝〜によって'],
+ ['困った＿、彼は財布をなくしてしまった。',['ことに','ことで','ものの','わりに'],'〜ことに＝気持ちを強める（残念なことに）'],
+ ['この薬は、医師の指示＿飲んでください。',['に従って','に反して','をめぐって','にかけては'],'〜に従って＝指示どおりに'],
+ ['料理＿、彼女の右に出る者はいない。',['にかけては','にわたって','に際して','に反して'],'〜にかけては＝〜のことなら'],
+ ['卒業＿、先生にお礼の手紙を書いた。',['に際して','にかけては','をめぐって','を問わず'],'〜に際して＝〜するときに'],
+ ['この店は、季節＿メニューが変わる。',['によって','にかけては','に際して','をこめて'],'〜によって＝それぞれ違う'],
+ ['母への感謝＿、手紙を書いた。',['をこめて','をめぐって','に沿って','を通じて'],'〜をこめて＝気持ちを入れて'],
+ ['友人＿、今の仕事を見つけた。',['を通じて','をこめて','に際して','にかけては'],'〜を通じて＝〜を通して'],
+ ['いくら頼まれた＿、そんなことはできない。',['としても','からには','以上','うえは'],'いくら〜としても＝たとえ〜ても'],
+ ['彼が謝らない＿、私は許さない。',['かぎり','うちに','あげく','ものの'],'〜ないかぎり＝〜しなければ'],
+ ['今さら後悔した＿、もう遅い。',['ところで','とたん','ついでに','次第'],'〜たところで＝〜しても（むだだ）'],
+ ['このラーメン屋は、おいしい＿安い。',['うえに','くせに','とおりに','あげく'],'〜うえに＝それに加えて'],
+ ['雨が降っていた＿、試合は続けられた。',['にもかかわらず','からといって','からには','とたん'],'〜にもかかわらず＝〜のに'],
+ ['日本人だ＿、敬語が上手だとは限らない。',['からといって','からには','にもかかわらず','以上'],'〜からといって〜とは限らない']],
+ yomi:[
+ ['道路が〔渋滞〕している。',['じゅうたい','じゅたい','しゅうたい','じゅうだい'],'渋滞（じゅうたい）'],
+ ['注意を〔怠る〕と、事故が起きる。',['おこたる','なまける','おとる','あなどる'],'怠る（おこたる）'],
+ ['新しい制度を〔導入〕する。',['どうにゅう','どうにゅ','とうにゅう','どうりゅう'],'導入（どうにゅう）'],
+ ['〔穏やか〕な性格の人だ。',['おだやか','なごやか','すこやか','あざやか'],'穏やか（おだやか）'],
+ ['商品の〔在庫〕を確認する。',['ざいこ','さいこ','ざいご','ざいく'],'在庫（ざいこ）']],
+ kotoba:[
+ ['会議の時間を、3時から4時に＿した。',['変更','変化','変動','変換'],'変更＝予定などを変える'],
+ ['この問題は、専門家に＿したほうがいい。',['相談','会談','面談','雑談'],'相談＝意見を聞く'],
+ ['彼の説明はとても＿で、すぐに理解できた。',['明確','頑固','複雑','曖昧'],'明確＝はっきりしている'],
+ ['朝から雨が＿と降り続いている。',['しとしと','からから','ぎらぎら','ぺこぺこ'],'しとしと＝静かに雨が降る様子']],
+ iikae:[
+ ['彼の態度に〔うんざりした〕。',['いやになった','感動した','安心した','驚いた'],'うんざり＝もういやだと思う'],
+ ['新商品は〔たちまち〕売り切れた。',['すぐに','ようやく','だんだん','そのうち'],'たちまち＝すぐに'],
+ ['父は〔めったに〕外食しない。',['ほとんど','よく','ときどき','必ず'],'めったに〜ない＝ほとんど〜ない'],
+ ['彼女は〔几帳面〕な人だ。',['きちんとしている','明るい','だらしない','気が弱い'],'几帳面＝細かいところまできちんとしている']],
+ o:[
+ {q:'彼は＃、何も言わずに帰った。',a:['怒って','いる','かの','ように'],s:2},
+ {q:'お忙しい＃ありがとうございます。',a:['ところ','わざわざ','来て','いただいて'],s:1},
+ {q:'結果が＃ご連絡します。',a:['わかり','次第','こちら','から'],s:2},
+ {q:'このレストランは＃予約が必要だ。',a:['人気が','ある','ので','必ず'],s:2},
+ {q:'毎日練習＃上手にならない。',a:['し','ない','かぎり','決して'],s:2}]},
+N1:{
+ g:[
+ ['彼は天才と言われる＿、10歳で大学に入学した。',['だけあって','ばかりに','ものの','かたがた'],'〜だけあって＝さすが〜なので'],
+ ['ご報告＿、ご挨拶に伺いました。',['かたがた','ながらに','なりに','ずくめ'],'〜かたがた＝〜を兼ねて（改まった表現）'],
+ ['散歩＿、パンを買いに行った。',['がてら','ともなく','なりに','ながらに'],'〜がてら＝〜のついでに'],
+ ['彼女は涙＿、事故のことを語った。',['ながらに','なりに','ずくめで','まみれで'],'〜ながらに＝〜の状態で（涙ながらに）'],
+ ['子どもは子ども＿、いろいろ考えているのだ。',['なりに','ながらに','かたがた','ごとき'],'〜なりに＝それに合った程度で'],
+ ['見る＿見ていたテレビに、友達が映っていた。',['ともなく','ことなく','までもなく','なしに'],'〜ともなく＝特に〜しようと思わずに'],
+ ['彼は一日も休む＿働き続けた。',['ことなく','ともなく','までもなく','がてら'],'〜ことなく＝〜しないで'],
+ ['事前の連絡＿、会議を欠席するのは困る。',['なしに','ながらに','なりに','かたがた'],'〜なしに＝〜をしないで'],
+ ['この程度のミスなら、驚く＿。',['にはあたらない','にかたくない','に堪えない','をおいてない'],'〜にはあたらない＝〜する必要はない'],
+ ['彼の苦労は、想像する＿。',['にかたくない','にはあたらない','に堪えない','べからず'],'〜にかたくない＝簡単に〜できる'],
+ ['この映画は、見る＿ほどひどい内容だった。',['に堪えない','にかたくない','にたる','べく'],'〜に堪えない＝ひどくて〜できない'],
+ ['彼は信頼する＿人物だ。',['にたる','に堪えない','べからざる','ごとき'],'〜にたる＝〜する価値がある'],
+ ['試験に合格す＿、毎日努力している。',['べく','べき','べからず','まじき'],'〜べく＝〜するために（する→すべく）'],
+ ['カンニングは、学生にある＿行為だ。',['まじき','べく','べからず','ごとき'],'〜まじき＝〜してはならない'],
+ ['芝生に入る＿。',['べからず','まじき','べく','ごとき'],'〜べからず＝〜してはいけない（禁止）'],
+ ['私＿者に、そんな大役は務まりません。',['ごとき','ごとく','なりの','まじき'],'〜ごとき＝〜のような（へりくだり）'],
+ ['雨が降ろう＿降るまいが、予定どおり出発する。',['が','と','に','を'],'〜（よ）うが〜まいが＝どちらでも'],
+ ['彼が会社を辞めたのは、病気の＿だった。',['ゆえ','ごとき','なり','まみれ'],'〜ゆえ＝〜のため（かたい表現）'],
+ ['お客様＿商売だ。',['あっての','なりの','ごときの','ながらの'],'〜あっての＝〜があるから成り立つ'],
+ ['教師＿者、学生の手本でなければならない。',['たる','なる','ごとき','まじき'],'〜たる者＝〜という立場にある人は'],
+ ['部屋に入る＿、電話が鳴った。',['や否や','ものを','ともなく','なりに'],'〜や否や＝〜するとすぐ'],
+ ['困っていたなら、言ってくれればよかった＿。',['ものを','ものの','ものか','ものなら'],'〜ものを＝〜のに（不満・残念）']],
+ yomi:[
+ ['両国の関係は〔円滑〕だ。',['えんかつ','えんこつ','えんがつ','えんけつ'],'円滑（えんかつ）'],
+ ['事件の〔顛末〕を報告する。',['てんまつ','てんまい','しんまつ','てんばつ'],'顛末（てんまつ）＝はじめから終わりまで'],
+ ['計画を〔撤回〕する。',['てっかい','てつかい','せっかい','てっけい'],'撤回（てっかい）'],
+ ['〔慌ただしい〕一日だった。',['あわただしい','あわたたしい','いそがただしい','あらただしい'],'慌ただしい（あわただしい）'],
+ ['自然環境を〔損なう〕。',['そこなう','うしなう','そんなう','おこなう'],'損なう（そこなう）']],
+ kotoba:[
+ ['新製品の開発は、すでに最終＿に入っている。',['段階','階段','手段','場合'],'段階＝物事が進むときの区切り'],
+ ['予算の＿で、計画を縮小した。',['都合','具合','加減','調子'],'都合＝事情'],
+ ['彼は何度失敗しても＿ずに挑戦し続けた。',['めげ','ばて','ぼけ','とぼけ'],'めげる＝くじける'],
+ ['会社の不正が明るみに＿。',['出た','入った','落ちた','開いた'],'明るみに出る＝隠されていたことが知られる'],
+ ['長年の夢が、ついに＿した。',['実現','実行','実施','実践'],'実現＝夢や計画が本当になる']],
+ iikae:[
+ ['彼は〔おもむろに〕立ち上がった。',['ゆっくりと','急に','怒って','黙って'],'おもむろに＝ゆっくり落ち着いて'],
+ ['〔ひとまず〕休憩しよう。',['とりあえず','ついに','たまに','やはり'],'ひとまず＝とりあえず'],
+ ['彼の話は〔つじつまが合わない〕。',['筋が通らない','おもしろくない','長すぎる','わかりやすい'],'つじつまが合わない＝話の筋が通らない'],
+ ['〔案の定〕、雨が降ってきた。',['思ったとおり','意外にも','急に','ついに'],'案の定＝予想どおり'],
+ ['彼の〔ずさんな〕計画は失敗した。',['いい加減な','慎重な','大胆な','複雑な'],'ずさん＝いい加減で雑']],
+ o:[
+ {q:'彼は＃今回の失敗は許されない。',a:['ベテラン','である','だけに','なおさら'],s:2},
+ {q:'この店は＃だと考えている。',a:['地元の','お客様','あっての','商売'],s:2},
+ {q:'彼女は＃語った。',a:['涙','ながらに','事故の','様子を'],s:1},
+ {q:'部屋に＃泣き出した。',a:['入る','や','否や','子どもは'],s:2},
+ {q:'この程度の＃。',a:['ミスなら','驚く','には','あたらない'],s:2},
+ {q:'彼の苦労は、＃にかたくない。',a:['周りの','反応を','見れば','想像する'],s:2},
+ {q:'カンニングは、学生＃だ。',a:['として','ある','まじき','行為'],s:2},
+ {q:'彼は＃辞めてしまった。',a:['一言の','相談も','なしに','会社を'],s:2},
+ {q:'教師＃なければならない。',a:['たる','者','学生の','手本で'],s:1},
+ {q:'雨が＃予定どおり出発する。',a:['降ろう','が','降る','まいが'],s:2}]}};
+for(const lv in MORE_Q)for(const k in MORE_Q[lv])BANK[lv][k].push(...MORE_Q[lv][k]);
+const POOL={};
+for(const lv of LEVELS){const b=BANK[lv];POOL[lv]={
+  g:b.g.map(([q,o,ex])=>({c:'g',q,o,ex})),
+  v:[...b.yomi.map(([q,o,ex])=>({c:'yomi',q,o,ex})),...b.kotoba.map(([q,o,ex])=>({c:'kotoba',q,o,ex})),...b.iikae.map(([q,o,ex])=>({c:'iikae',q,o,ex}))],
+  o:b.o.map(x=>({c:'o',q:x.q,a:x.a,s:x.s,o:[x.a[x.s],...x.a.filter((_,i)=>i!==x.s)],ex:'正しい順番：'+x.a.join(' → ')}))};}
+const catOf=Q=>Q.c==='g'?'g':Q.c==='o'?'o':'v';
+
+const TEAM_COLORS=['var(--t1)','var(--t2)','var(--t3)','var(--t4)','var(--t5)'];
+const DEFAULT_NAMES=['Aチーム','Bチーム','Cチーム','Dチーム','Eチーム'];
+const SLOT_KEY=n=>'n2life-slot-'+n;
+const TYPES={g:'文法（穴埋め）',kotoba:'語彙（穴埋め）',yomi:'語彙（読み方）',iikae:'語彙（言いかえ）',o:'並べ替え（★）'};
+const QMODES={mix:'教材＋自作',custom:'自作だけ',builtin:'教材だけ'};
+let names=[...DEFAULT_NAMES];
+let S, rot=0, decks={};
+
+const $=id=>document.getElementById(id);
+const rnd=n=>Math.floor(Math.random()*n);
+const pickOne=a=>a[rnd(a.length)];
+const shuffle=a=>{a=[...a];for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]]}return a};
+// internal amounts stay small; the display scales them (桃鉄ふう: 1 = 1000万円, 現実的: 1 = 10万円)
+const UNITS={oku:1000,real:10};
+const unitMul=()=>UNITS[(S&&S.unit)||'oku']||1000;
+function fmtMan(v){v=Math.round(v);const a=Math.abs(v);if(a>=10000){const o=Math.floor(a/10000),r=a%10000;return o+'億'+(r?r+'万':'');}return a+'万';}
+const amt=m=>fmtMan(Math.abs(m)*unitMul());
+const yen=m=>(m<0?'−':'')+amt(m)+'円';
+const sign=m=>(m>=0?'+':'−')+amt(m)+'円';
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const wait=ms=>new Promise(r=>setTimeout(r,reduce?Math.min(ms,80):ms));
+const propValue=tm=>(tm.props||[]).reduce((s,id)=>s+(PROP[id]?PROP[id].p:0),0);
+const propIncome=tm=>tm.props.reduce((s,id)=>s+PROP[id].r,0);
+const assets=tm=>tm.money+propValue(tm);
+const lvTag=lv=>`<span class="lvtag" style="--lc:${LV[lv].c}">${lv}</span>`;
+const idle=()=>S&&!S.busy&&$('ov').hidden;
+
+/* ---------- sound ---------- */
+let muted=false, ac=null;
+try{muted=localStorage.getItem('n2life-muted')==='1'}catch(e){}
+function tone(f,d,type='sine',v=.15,when=0){
+  if(muted)return;
+  try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();
+    const t=ac.currentTime+when,o=ac.createOscillator(),g=ac.createGain();
+    o.type=type;o.frequency.value=f;g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+d);
+    o.connect(g).connect(ac.destination);o.start(t);o.stop(t+d+.02);}catch(e){}
+}
+const sfx={
+  tick:()=>tone(1100,.03,'square',.04), step:()=>tone(620,.06,'sine',.1),
+  beep:()=>tone(880,.08,'square',.08),
+  ok:()=>{tone(784,.15,'triangle',.22);tone(1047,.35,'triangle',.22,.12)},
+  ng:()=>{tone(220,.18,'sawtooth',.1);tone(160,.35,'sawtooth',.1,.15)},
+  coin:()=>{tone(988,.08,'square',.07);tone(1319,.3,'square',.07,.08)},
+  fan:()=>[523,659,784,1047].forEach((f,i)=>tone(f,.28,'triangle',.18,i*.11)),
+  card:()=>{tone(440,.08,'triangle',.12);tone(660,.12,'triangle',.12,.08)},
+  bell:()=>[1047,784,1047,784].forEach((f,i)=>tone(f,.35,'triangle',.2,i*.3))};
+function setMute(m){muted=m;try{localStorage.setItem('n2life-muted',m?'1':'0')}catch(e){}
+  $('sndOn').setAttribute('aria-pressed',!m);$('sndOff').setAttribute('aria-pressed',m);}
+
+/* ---------- toasts ---------- */
+function toast(msg,gray,sub){const t=document.createElement('div');t.className='toast'+(gray?' gray':'');t.textContent=msg;
+  if(sub){const s=document.createElement('small');s.textContent=sub;t.appendChild(s);}
+  $('toasts').appendChild(t);setTimeout(()=>t.remove(),2800);}
+
+/* ---------- custom questions ---------- */
+let CUSTOM=[], QMODE='mix', customRef=null, customChain=Promise.resolve(), customSavedAt='';
+function loadLocalCustom(){try{const d=JSON.parse(localStorage.getItem('n2life-custom')||'null');if(d&&Array.isArray(d.items)){CUSTOM=d.items;QMODE=QMODES[d.mode]?d.mode:'mix';customSavedAt=d.savedAt||''}}catch(e){}}
+function saveCustom(){
+  const data={savedAt:new Date().toISOString(),mode:QMODE,items:CUSTOM};customSavedAt=data.savedAt;decks={};
+  try{localStorage.setItem('n2life-custom',JSON.stringify(data))}catch(e){}
+  if(customRef)customChain=customChain.then(()=>customRef.set(data)).catch(()=>toast('自作問題をアカウントに保存できませんでした（この端末には保存済み）',true));
+}
+function poolFor(lv,cat){
+  const cus=CUSTOM.filter(q=>catOf(q)===cat);
+  const cusLv=cus.filter(q=>q.lv===lv);
+  if(QMODE==='custom'&&CUSTOM.length){
+    if(cusLv.length)return cusLv;
+    if(cus.length)return cus;
+    const anyLv=CUSTOM.filter(q=>q.lv===lv);
+    return anyLv.length?anyLv:CUSTOM;
+  }
+  if(QMODE==='builtin')return POOL[lv][cat];
+  return [...POOL[lv][cat],...cusLv];
+}
+
+/* ---------- save slots ---------- */
+let dbRefs=null, saveChain=Promise.resolve(), curSlot=null, slotsOpen=false, newCount=4, newLen=30, newRand=false;
+const slotData={1:null,2:null,3:null};
+function fmtTime(iso){try{const d=new Date(iso);return `${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`}catch(e){return ''}}
+function setSaveStat(t){$('saveStat').textContent=t;}
+const isGame=d=>d&&d.game&&Array.isArray(d.game.teams)&&d.game.teams.length>=1;
+function newer(a,b){if(!isGame(a))return isGame(b)?b:null;if(!isGame(b))return a;return a.savedAt>=b.savedAt?a:b}
+function snapshotData(){
+  return {v:5,savedAt:new Date().toISOString(),names,
+    game:{readThemes:S.readThemes,unit:S.unit,seed:S.seed,opts:S.opts,talkScenes:S.talkScenes,bomb:S.bomb,turn:S.turn,finished:S.finished,again:S.again,over:S.over,levels:S.levels,len:S.len,qtime:S.qtime,misses:S.misses.slice(-80),
+      teams:S.teams.map(t=>({name:t.name,ci:t.ci,pos:t.pos,money:t.money,done:t.done,job:t.job,skip:t.skip,double:t.double,props:t.props,helps:t.helps}))}};
+}
+function save(){
+  if(!curSlot)return;
+  const slot=curSlot,data=snapshotData();slotData[slot]=data;let local=false;
+  try{localStorage.setItem(SLOT_KEY(slot),JSON.stringify(data));local=true}catch(e){}
+  const label=`スロット${slot}`;
+  if(dbRefs){
+    saveChain=saveChain.then(()=>dbRefs[slot].set(data))
+      .then(()=>setSaveStat(`${label}に自動セーブ済み ${fmtTime(data.savedAt)}`))
+      .catch(()=>setSaveStat(local?`${label}（この端末）にセーブ ${fmtTime(data.savedAt)}`:'セーブできませんでした'));
+  }else setSaveStat(local?`${label}（この端末）にセーブ ${fmtTime(data.savedAt)}`:'セーブできませんでした（この画面では保存できません）');
+}
+function slotInfo(d){
+  const g=d.game;const ranked=[...g.teams].sort((a,b)=>(b.money+propValue(b))-(a.money+propValue(a)));
+  const top=ranked[0];const far=Math.max(...g.teams.map(t=>t.pos));const len=g.len||30;
+  const lv=(g.levels&&g.levels.length?g.levels:LEVELS).join('・');
+  if(g.over)return `<span>終了したゲーム</span><small>${fmtTime(d.savedAt)}・${g.teams.length}チーム・1位 ${esc(top.name)}（${yen(top.money+propValue(top))}）</small>`;
+  return `<span>${g.teams.length}チーム・いちばん先は${far}／${len-1}マス</span><small>${fmtTime(d.savedAt)}・${lv}・トップ ${esc(top.name)}（${yen(top.money+propValue(top))}）</small>`;
+}
+function segHTML(id,label,vals,cur,fmt=v=>v){return `<div class="seg" id="${id}"><b>${label}</b>${vals.map(v=>`<button type="button" data-v="${v}" aria-pressed="${v===cur}">${fmt(v)}</button>`).join('')}</div>`}
+function wireSeg(id,set){document.querySelectorAll('#'+id+' button').forEach(b=>b.addEventListener('click',()=>{set(b.dataset.v);
+  document.querySelectorAll('#'+id+' button').forEach(x=>x.setAttribute('aria-pressed',x===b));}));}
+function showSlots(){
+  slotsOpen=true;
+  const rows=[1,2,3].map(n=>{
+    const d=slotData[n],cur=n===curSlot;
+    let info,btns;
+    if(isGame(d)&&!d.game.over){info=slotInfo(d);btns=`<button type="button" data-act="load" data-n="${n}">続きから</button><button type="button" class="alt" data-act="new" data-n="${n}">消して新しく</button>`;}
+    else if(isGame(d)){info=slotInfo(d);btns=`<button type="button" data-act="new" data-n="${n}">ここで新しく始める</button>`;}
+    else{info=`<span>空き</span><small>まだ遊んでいません</small>`;btns=`<button type="button" data-act="fresh" data-n="${n}">ここで新しく始める</button>`;}
+    return `<div class="sv${cur?' cur':''}"><div class="svn">${n}<small>${cur?'使用中':'スロット'}</small></div><div class="svi">${info}</div><div class="svb">${btns}</div></div>`;
+  }).join('');
+  openCard(`<h2 class="ttl">セーブデータを選ぶ</h2>
+    <p class="desc">クラスごとにスロットを分けると便利です。ターンが終わるたびに、選んだスロットへ自動でセーブされます。</p>
+    ${segHTML('newCountSeg','新しく始めるときのチーム数',[1,2,3,4,5],newCount,v=>v===1?'ソロ':v)}
+    ${segHTML('newLenSeg','マスの数',LENGTHS,newLen,v=>v+'マス')}
+    ${segHTML('newRandSeg','マスの並び',['fixed','random'],newRand?'random':'fixed',v=>v==='random'?'ランダム':'いつもと同じ')}
+    <div class="svlist">${rows}</div><div id="after"><div class="foot"><button class="next alt" type="button" id="slotRules">ルール説明</button>${curSlot?'<button class="next alt" type="button" id="slotClose">閉じる</button>':''}</div></div>`,'var(--goal)');
+  $('slotRules').addEventListener('click',()=>showRules(showSlots));
+  wireSeg('newCountSeg',v=>newCount=+v);wireSeg('newLenSeg',v=>newLen=+v);wireSeg('newRandSeg',v=>newRand=v==='random');
+  document.querySelectorAll('.sv .svb button').forEach(b=>b.addEventListener('click',()=>{
+    const n=+b.dataset.n;
+    if(b.dataset.act==='load')restore(slotData[n],n);
+    else if(b.dataset.act==='fresh')startInSlot(n);
+    else if(b.dataset.act==='new'){
+      if(b.dataset.armed){startInSlot(n);return;}
+      b.dataset.armed='1';b.textContent='もう一度押すと消えます';b.classList.add('warn');
+      setTimeout(()=>{if(b.isConnected){delete b.dataset.armed;b.textContent='消して新しく';b.classList.remove('warn')}},4000);
+    }
+  }));
+  if($('slotClose'))$('slotClose').addEventListener('click',()=>{slotsOpen=false;$('ov').hidden=true;});
+  const first=document.querySelector('.sv .svb button');if(first)first.focus();
+}
+function startInSlot(n){
+  curSlot=n;slotsOpen=false;
+  newGame(newCount,newLen,newRand);save();
+  $('spinRes').textContent=`スロット${n}で新しいゲーム`;
+}
+function restore(d,n){
+  names=[...DEFAULT_NAMES];(d.names||[]).forEach((x,i)=>{if(x)names[i]=x});
+  const g=d.game;const len=LENGTHS.includes(g.len)?g.len:30;
+  TILES=buildTiles(len,g.seed||0);LAST=TILES.length-1;
+  S={teams:g.teams.map(t=>({name:t.name,ci:t.ci,color:TEAM_COLORS[t.ci],pos:Math.min(t.pos,LAST),money:t.money,done:t.done||0,job:t.job||null,skip:!!t.skip,double:!!t.double,props:(t.props||[]).filter(id=>PROP[id]),helps:Object.assign({half:true,ask:true},t.helps||{})})),
+     turn:g.turn,finished:g.finished||0,again:!!g.again,over:false,busy:false,last:null,q:null,len,
+     levels:(g.levels||LEVELS).filter(l=>LV[l]),qtime:QTIMES.includes(g.qtime)?g.qtime:20,misses:Array.isArray(g.misses)?g.misses:[],bomb:Object.assign(newBomb(true),g.bomb||{}),bombDone:false,bombMoved:false,seed:g.seed||0,opts:Object.assign({steal:true,bet:true,half:true,ask:true,sorry:true,read:true},g.opts||{}),talkScenes:(Array.isArray(g.talkScenes)?g.talkScenes:ALL_TALK).filter(x=>TALK_SCENES[x]),unit:g.unit||'oku',readThemes:(Array.isArray(g.readThemes)?g.readThemes:READ_TILE_THEMES).filter(x=>READ_NAME[x])};
+  if(S.bomb.team>=S.teams.length||(S.bomb.team>=0&&S.teams[S.bomb.team].done))S.bomb.team=-1;
+  if(!S.levels.length)S.levels=[...LEVELS];
+  curSlot=n;slotsOpen=false;decks={};$('ov').hidden=true;
+  buildBoard();render();buildSettings();$('spinRes').textContent=`${S.teams[S.turn].name}の番から再開`;
+  setSaveStat(`スロット${n}（${fmtTime(d.savedAt)}）から再開`);
+}
+function loadLocalSlots(){
+  for(const n of [1,2,3]){try{const d=JSON.parse(localStorage.getItem(SLOT_KEY(n))||'null');if(isGame(d))slotData[n]=d;}catch(e){}}
+  if(!slotData[1]){try{const old=JSON.parse(localStorage.getItem('n2life-save-v3')||'null');if(isGame(old)&&!old.game.over)slotData[1]=old;}catch(e){}}
+}
+async function initCloud(){
+  try{
+    if(!window.claude||!window.claude.use)return;
+    const [db,user]=await Promise.all([window.claude.use('db'),window.claude.use('user')]);
+    if(!db||!user)return;
+    const uid=await user.id();if(!uid)return;
+    const base='data/users/'+uid+'/';
+    dbRefs={1:db.doc(base+'slot1'),2:db.doc(base+'slot2'),3:db.doc(base+'slot3')};
+    customRef=db.doc(base+'custom');
+    const snaps=await Promise.all([1,2,3].map(n=>dbRefs[n].get()));
+    snaps.forEach((s,i)=>{if(s.exists)slotData[i+1]=newer(slotData[i+1],s.data());});
+    if(!isGame(slotData[1])){const legacy=await db.doc(base+'save').get();if(legacy.exists){const d=legacy.data();if(isGame(d)&&!d.game.over)slotData[1]=d;}}
+    const cs=await customRef.get();
+    if(cs.exists){const d=cs.data();if(Array.isArray(d.items)&&(d.savedAt||'')>=customSavedAt){CUSTOM=d.items;QMODE=QMODES[d.mode]?d.mode:'mix';customSavedAt=d.savedAt||'';decks={};
+      try{localStorage.setItem('n2life-custom',JSON.stringify(d))}catch(e){}}}
+    else if(CUSTOM.length)saveCustom();
+    updateToolBtns();
+    if(slotsOpen)showSlots();
+    if(curSlot)setSaveStat(`スロット${curSlot}・アカウントに自動セーブ`);
+  }catch(e){dbRefs=null;customRef=null}
+}
+
+/* ---------- class timer ---------- */
+let classEnd=null, warned5=false, timeUp=false;
+try{const v=+localStorage.getItem('n2life-classend');if(v>Date.now()){classEnd=v;warned5=v-Date.now()<=300000;}}catch(e){}
+function startClass(min){
+  classEnd=Date.now()+min*60000;warned5=min<=5;timeUp=false;$('clock').classList.remove('up');
+  try{localStorage.setItem('n2life-classend',String(classEnd))}catch(e){}
+  updateClock();toast(`授業タイマー ${min}分スタート`,true);
+}
+function stopClass(){classEnd=null;timeUp=false;try{localStorage.removeItem('n2life-classend')}catch(e){}updateClock();}
+function updateClock(){
+  const el=$('clock');
+  if(!classEnd){el.hidden=true;return;}
+  el.hidden=false;
+  const left=Math.max(0,classEnd-Date.now()),m=Math.floor(left/60000),s=Math.floor(left%60000/1000);
+  $('cnum').textContent=`${m}:${String(s).padStart(2,'0')}`;
+  el.classList.toggle('low',left<=300000&&left>0);
+  if(left<=300000&&left>0&&!warned5){warned5=true;sfx.beep();toast('授業の残り5分！');}
+  if(left<=0&&!timeUp){
+    timeUp=true;el.classList.add('up');$('cnum').textContent='時間です';sfx.bell();
+    if(S&&curSlot&&!S.over){
+      if(idle())endGame();else toast('時間です！ このターンが終わったら結果発表');
+    }
+  }
+}
+setInterval(updateClock,1000);
+
+/* ---------- game setup & rendering ---------- */
+function newGame(n,len,rand){
+  const prev=S;len=LENGTHS.includes(len)?len:(prev?prev.len:30);
+  if(rand===undefined)rand=!!(prev&&prev.seed);
+  const seed=rand?newSeed():0;
+  TILES=buildTiles(len,seed);LAST=TILES.length-1;
+  S={teams:Array.from({length:n},(_,i)=>({name:n===1&&names[0]===DEFAULT_NAMES[0]?'プレイヤー':names[i],ci:i,color:TEAM_COLORS[i],pos:0,money:10,done:0,job:null,skip:false,double:false,props:[],helps:{half:true,ask:true}})),
+     turn:0,busy:false,finished:0,last:null,over:false,again:false,q:null,len,seed,
+     levels:prev&&prev.levels?prev.levels:[...LEVELS],qtime:prev?prev.qtime:20,misses:[],bomb:newBomb(prev&&prev.bomb?prev.bomb.on:true),bombDone:false,bombMoved:false,opts:Object.assign({steal:true,bet:true,half:true,ask:true,sorry:true,read:true},prev&&prev.opts||{}),talkScenes:prev&&prev.talkScenes?[...prev.talkScenes]:[...ALL_TALK],unit:prev&&prev.unit||'oku',readThemes:prev&&prev.readThemes?[...prev.readThemes]:[...READ_TILE_THEMES]};
+  decks={};$('ov').hidden=true;timeUp=classEnd?classEnd<=Date.now():false;
+  buildBoard();render();$('spinRes').textContent='スペースキーで回す・止める';buildSettings();
+}
+function cell(k){const r=Math.floor(k/6),c=r%2===0?k%6:5-k%6;return{r,c}}
+function topLevel(){return S.levels.includes('N1')?'N1':S.levels.includes('N2')?'N2':'N3'}
+function buildBoard(){
+  const b=$('board');b.innerHTML='';const tl=topLevel();const rows=TILES.length/6;
+  b.style.setProperty('--rows',rows);b.classList.toggle('dense',rows>5);b.classList.toggle('xdense',rows>7);
+  TILES.forEach((t,k)=>{
+    const {r,c}=cell(k);const d=document.createElement('div');
+    const kind=t.t==='q'?QCAT[t.qc]:KIND[t.t];
+    d.className='tile'+(t.t==='start'||t.t==='goal'?' big':'')+(KIND[t.t]?' special':'');d.id='tile'+k;
+    d.style.gridRow=r+1;d.style.gridColumn=c+1;d.style.setProperty('--c',STAGES[t.s].c);
+    if(kind)d.style.setProperty('--kc',kind.c);
+    let chip='';
+    if(t.t==='q')chip=`<span class="chip k">${kind.n} 最大+${amt(winOf(t.a,tl))}</span>`;
+    else if(t.t==='e')chip=`<span class="chip ${t.a>0?'plus':'minus'}">${sign(t.a)}</span>`;
+    else if(t.t==='start')chip=`<span class="chip">所持金${yen(10)}</span>`;
+    else if(t.t==='goal')chip=`<span class="chip">1着 +${amt(GOAL_BONUS[0])}</span>`;
+    else if(t.t==='fwd')chip=`<span class="chip plus">${t.n}マス進む</span>`;
+    else if(t.t==='read')chip=`<span class="chip k">音読</span>`;
+    else if(t.t==='back')chip=`<span class="chip minus">${t.n}マス戻る</span>`;
+    else chip=`<span class="chip k">${kind.n}</span>`;
+    const dir=k===LAST?'':(Math.floor((k+1)/6)!==r?'↓':(r%2===0?'→':'←'));
+    d.innerHTML=`<span class="no">${k===0||k===LAST?'':k}</span><span class="lb">${t.t==='chance'?'？':t.l}</span>${chip}<div class="tokens"></div>${dir?`<span class="arrow">${dir}</span>`:''}${t.pay?'<span class="pay">給料日</span>':''}`;
+    b.appendChild(d);
+  });
+}
+function render(){
+  document.querySelectorAll('.tokens').forEach(e=>e.innerHTML='');
+  document.querySelectorAll('.tile.hot').forEach(e=>e.classList.remove('hot'));
+  S.teams.forEach((tm,i)=>{
+    const t=document.createElement('span');t.className='tok'+(i===S.turn&&!S.over?' now':'');t.style.setProperty('--tc',tm.color);
+    t.textContent=tm.name.slice(0,1);t.title=tm.name;
+    if(S.bomb.on&&S.bomb.team===i)t.insertAdjacentHTML('beforeend',`<span class="bmark">${bombSVG(S.bomb.king)}</span>`);
+    $('tile'+tm.pos).querySelector('.tokens').appendChild(t);
+  });
+  if(S.last!=null&&$('tile'+S.last))$('tile'+S.last).classList.add('hot');
+  const cur=S.teams[S.turn];
+  $('turnDot').style.setProperty('--tc',cur.color);$('turnName').textContent=S.over?'ゲーム終了':cur.name;
+  $('score').innerHTML=S.teams.map((tm,i)=>{
+    const cash=tm.money<0?`<span class="debt">借金${amt(tm.money)}</span>`:`現金${amt(tm.money)}`;
+    const prop=tm.props.length?`物件${tm.props.length}件`:'物件なし';
+    const job=tm.job?`<b>${esc(tm.job.n)}</b>`:'無職';
+    const flags=(S.bomb.on&&S.bomb.team===i?`<span class="flag bombf">${bombName()}</span>`:'')+(tm.double?'<span class="flag">2倍</span>':'')+(tm.skip?'<span class="flag rest">休み</span>':'')+(tm.done?`<span class="flag rest">${tm.done}着</span>`:'');
+    const a=assets(tm);
+    return `<div class="row${i===S.turn&&!S.over?' cur':''}"><span class="dot" style="--tc:${tm.color}"></span>
+    <div style="min-width:0"><div class="n">${esc(tm.name)}${flags}</div><span class="s">${cash}・${prop}・${job}${helpsLeft(tm)?`・助っ人${helpsLeft(tm)}`:''}</span></div>
+    <span class="m${a<0?' neg':''}">${yen(a)}</span></div>`}).join('');
+  setSpinBtn();
+  updateToolBtns();
+}
+function updateToolBtns(){
+  if(S)$('missBtn').textContent=`まちがえた問題（${S.misses.length}）`;
+  $('editBtn').textContent=`問題をつくる（${CUSTOM.length}）`;
+}
+function buildWheel(){
+  const g=$('wheelG');const cols=['var(--st1)','var(--st2)','var(--st3)','var(--st4)','var(--st5)','var(--goal)'];
+  let h='';
+  for(let i=0;i<6;i++){
+    const a0=(i*60-30)*Math.PI/180,a1=(i*60+30)*Math.PI/180,R=100;
+    h+=`<path d="M0 0 L${R*Math.sin(a0)} ${-R*Math.cos(a0)} A${R} ${R} 0 0 1 ${R*Math.sin(a1)} ${-R*Math.cos(a1)} Z" fill="${cols[i]}" stroke="#1b2233" stroke-width="3"/>`;
+    h+=`<text transform="rotate(${i*60}) translate(0 -62)" text-anchor="middle" dominant-baseline="central" font-family="Dela Gothic One, sans-serif" font-size="38" fill="#1b2233">${i+1}</text>`;
+  }
+  h+=`<circle r="100" fill="none" stroke="#1b2233" stroke-width="5"/>`;
+  g.innerHTML=h;
+}
+
+/* ---------- turn flow ---------- */
+/* roulette: spins freely until the teacher presses STOP (or it stops by itself), then slows down where it is */
+const SPIN_SPEED=0.75;            // degrees per ms while spinning freely
+const AUTO_STOP_MS=4000;          // stops by itself after this long
+let spinPhase='idle', autoStopTimer=null, spinSeg=0;
+function setSpinBtn(){
+  const b=$('spinBtn');
+  if(spinPhase==='free'){b.textContent='ストップ！';b.classList.add('stop');b.disabled=false;}
+  else{b.textContent='ルーレットを回す';b.classList.remove('stop');b.disabled=S.busy||S.over||!curSlot;}
+}
+function tickSeg(){const s2=Math.floor((rot+30)/60);if(s2!==spinSeg){spinSeg=s2;sfx.tick();}}
+function spin(){
+  if(spinPhase==='free'){stopSpin();return;}
+  if(S.busy||S.over||!$('ov').hidden||!curSlot||spinPhase!=='idle')return;
+  S.busy=true;S.last=null;spinPhase='free';render();setSpinBtn();
+  spinSeg=Math.floor((rot+30)/60);
+  $('spinRes').textContent='ストップを押してね';
+  let prev=performance.now();
+  (function free(now){
+    if(spinPhase!=='free')return;
+    rot+=SPIN_SPEED*Math.min(50,now-prev);prev=now;
+    $('wheelG').setAttribute('transform',`rotate(${rot})`);tickSeg();
+    requestAnimationFrame(free);
+  })(prev);
+  autoStopTimer=setTimeout(stopSpin,AUTO_STOP_MS);
+}
+function stopSpin(){
+  if(spinPhase!=='free')return;
+  spinPhase='stop';clearTimeout(autoStopTimer);setSpinBtn();$('spinBtn').disabled=true;
+  $('spinRes').textContent='……';
+  // decelerate evenly from full speed to zero; where it lands decides the number
+  const D=(reduce?250:1300)+Math.random()*500, v=SPIN_SPEED, from=rot, t0=performance.now();
+  (function slow(now){
+    const t=Math.min(D,now-t0);
+    rot=from+v*(t-t*t/(2*D));$('wheelG').setAttribute('transform',`rotate(${rot})`);tickSeg();
+    if(t<D){requestAnimationFrame(slow);return;}
+    const a=((rot%360)+360)%360;const n=(Math.round(((360-a)%360)/60)%6)+1;
+    spinPhase='idle';setSpinBtn();$('spinBtn').disabled=true;
+    $('spinRes').textContent=`${n} が出た！`;wait(450).then(()=>move(S.teams[S.turn],n));
+  })(t0);
+}
+function pay(tm){
+  const sal=tm.job?tm.job.sal:1,inc=propIncome(tm);tm.money+=sal+inc;sfx.coin();
+  toast(`給料日！ ${tm.name} ${sign(sal+inc)}`,false,inc?`給料${amt(sal)}＋物件${amt(inc)}`:`給料${amt(sal)}`);
+}
+async function move(tm,n,chain){
+  let left=n;
+  while(left>0&&tm.pos<LAST){
+    tm.pos++;left--;S.last=tm.pos;sfx.step();
+    const t=TILES[tm.pos];
+    if(t.pay)pay(tm);
+    if(t.t==='job'||t.t==='marry'){if(left>0)toast('止まれ！',true);left=0;}
+    bombPass(tm);render();await wait(330);
+  }
+  await wait(250);land(tm,chain);
+}
+async function moveBack(tm,n){
+  for(let i=0;i<n&&tm.pos>0;i++){tm.pos--;S.last=tm.pos;sfx.step();bombPass(tm);render();await wait(330);}
+  await wait(250);land(tm,true);
+}
+function drawQ(lv,cat){
+  if(cat==='any')cat=pickOne(['g','g','v','v','o']);
+  const key=QMODE+'-'+lv+'-'+cat;
+  if(!decks[key]||!decks[key].length)decks[key]=shuffle(poolFor(lv,cat));
+  const Q=decks[key].pop();
+  return {...Q,lv:Q.lv||lv,correct:Q.o[0],order:shuffle(Q.o)};
+}
+function head(tile,tm,kind){
+  return `<div class="head"><span class="stg">${STAGES[tile.s].n}</span>${kind?`<span class="kind" style="--kc:${kind.c}">${kind.n}</span>`:''}${tm?`<span class="who"><span class="dot" style="--tc:${tm.color}"></span>${esc(tm.name)}</span>`:''}</div>`;
+}
+function openCard(html,stageColor){stopAnswerTimer();const c=$('card');c.style.setProperty('--sc',stageColor);c.innerHTML=html;c.scrollTop=0;$('ov').hidden=false;}
+function foot(el,label='次のチームへ',fn=next){
+  el.insertAdjacentHTML('beforeend',`<div class="foot"><button class="next" type="button">${label}</button></div>`);
+  const b=el.querySelector('.foot:last-child .next');b.addEventListener('click',fn,{once:true});b.focus();
+}
+/* level choice: prizes(lv) -> [win, lose] */
+function chooseLevel(tm,tile,kind,title,prizes,cb){
+  if(S.levels.length===1){cb(S.levels[0]);return;}
+  openCard(`${head(tile,tm,kind)}<h2 class="ttl">${title}</h2><p class="desc">どのレベルに挑戦する？ チームで相談して選ぼう。</p>
+    <div class="lvl">${S.levels.map(lv=>{const [w,l]=prizes(lv);return `<button class="lvbtn" type="button" data-lv="${lv}" style="--lc:${LV[lv].c}">${lv}<small>正解 ${sign(w)}／まちがい ${sign(l)}</small></button>`}).join('')}</div>`,STAGES[tile.s].c);
+  const btns=document.querySelectorAll('.lvbtn');
+  btns.forEach(b=>b.addEventListener('click',()=>cb(b.dataset.lv),{once:true}));
+  btns[0].focus();
+}
+function land(tm,chain){
+  const tile=TILES[tm.pos];const sc=STAGES[tile.s].c;const K=KIND[tile.t];
+  switch(tile.t){
+  case 'goal':{
+    S.finished++;tm.done=S.finished;const b=GOAL_BONUS[S.finished-1]||0;tm.money+=b;
+    let bnote='';
+    if(S.bomb.on&&S.bomb.team===S.teams.indexOf(tm)){const to=richest(tm);
+      if(to){S.bomb.team=S.teams.indexOf(to);if(!S.bomb.king)S.bomb.turns=0;bnote=`<p class="desc">${bombName()}は <b>${esc(to.name)}</b> にうつった！</p>`;}
+      else{S.bomb.team=-1;bnote='<p class="desc">貧乏神はどこかへ行ってしまった。</p>';}}
+    render();sfx.fan();
+    const table=GOAL_BONUS.slice(0,S.teams.length).map((v,i)=>`<span class="${i===S.finished-1?'me':''}">${i+1}着 +${amt(v)}</span>`).join('');
+    openCard(`${head(tile,tm)}<h2 class="ttl">${S.finished}着でゴール！</h2><p class="desc">早くゴールしたチームほど、大きなボーナスがもらえます。</p><div class="bonus">${table}</div><div class="money plus">${sign(b)}</div>${bnote}<div id="after"></div>`,sc);
+    foot($('after'));return;}
+  case 'e':{
+    if(tile.a<0&&S.opts.sorry){sorryChallenge(tm,tile);return;}
+    if(tile.a>0&&S.opts.read){
+      const pay=[0,Math.max(1,Math.round(tile.a/3)),tile.a,tile.a*2];
+      readChallenge(tm,tile,tile.l,`${tile.d} 文を読みがななしで読んでみよう。上手に読めたら、もらえるお金が増えます。`,READ_THEME[tile.l]||'any',
+        `◎ ${sign(pay[3])}／○ ${sign(pay[2])}／△ ${sign(pay[1])}`,
+        j=>{tm.money+=pay[j];render();j>=2?sfx.fan():sfx.coin();
+          $('after').innerHTML=verdictHTML(j>=2?'ok':'neutral',['','少しだけもらえた','もらえた！','たくさんもらえた！'][j],pay[j],'');foot($('after'));});
+      return;}
+    tm.money+=tile.a;render();tile.a>0?sfx.coin():sfx.ng();
+    openCard(`${head(tile,tm)}<h2 class="ttl">${tile.l}</h2><p class="desc">${tile.d}</p><div class="money ${tile.a>0?'plus':'minus'}">${sign(tile.a)}</div><div id="after"></div>`,sc);
+    foot($('after'));return;}
+  case 'q':{
+    const mult=tm.double?2:1;
+    chooseLevel(tm,tile,QCAT[tile.qc],tile.l,lv=>[winOf(tile.a,lv)*mult,loseOf(tile.a,lv)],lv=>{
+      const dbl=tm.double;tm.double=false;render();
+      const win=winOf(tile.a,lv)*(dbl?2:1),lose=loseOf(tile.a,lv);
+      startQuiz(tm,tile,QCAT[tile.qc],lv,tile.qc,tile.l,`正解すると <b style="color:var(--ok)">${sign(win)}</b>${dbl?'（2倍！）':''}、まちがえると <b style="color:var(--ng)">${sign(lose)}</b>`,win,lose);
+    });return;}
+  case 'job':
+    startQuiz(tm,tile,K,pickOne(S.levels),'any','就職活動',`正解すると <b>人気の職業</b>、まちがえると <b>ふつうの職業</b>からルーレットで決まります。給料日に給料がもらえます。`,0,0,ok=>jobRoulette(tm,ok));return;
+  case 'marry':{
+    if(S.opts.read){
+      const others=S.teams.filter(t=>t!==tm),solo=!others.length;
+      const per=[0,1,2,3],soloPay=[0,1,3,6];
+      readChallenge(tm,tile,'結婚おめでとう！','結婚式のスピーチを、読みがななしで読んでみよう。上手に読めたら、ご祝儀が増えます。','marry',
+        solo?`◎ ${sign(soloPay[3])}／○ ${sign(soloPay[2])}／△ ${sign(soloPay[1])}`:`ご祝儀は1チームから ◎ ${amt(per[3])}／○ ${amt(per[2])}／△ ${amt(per[1])}`,
+        j=>{let got;if(solo){got=soloPay[j];}else{others.forEach(t=>t.money-=per[j]);got=per[j]*others.length;}
+          tm.money+=got;render();j>=2?sfx.fan():sfx.coin();
+          $('after').innerHTML=verdictHTML(j>=2?'ok':'neutral',['','ご祝儀は少しだけ…','ご祝儀をもらった！','すばらしいスピーチ！ ご祝儀がたくさん！'][j],got,solo?'':'ほかのチームからのご祝儀です');foot($('after'));});
+      return;}
+    const others=S.teams.filter(t=>t!==tm);others.forEach(t=>t.money-=1);const got=others.length;tm.money+=got;render();sfx.fan();
+    openCard(`${head(tile,tm,K)}<h2 class="ttl">結婚おめでとう！</h2><p class="desc">ほかのチームから、お祝いを${amt(1)}円ずつもらいます。</p><div class="money plus">${sign(got)}</div><div id="after"></div>`,sc);
+    foot($('after'));return;}
+  case 'shop': shop(tm,tile);return;
+  case 'chance': chance(tm,tile);return;
+  case 'battle': battle(tm,tile);return;
+  case 'risk': risk(tm,tile);return;
+  case 'fwd': case 'back':{
+    const fwd=tile.t==='fwd';
+    if(chain){openCard(`${head(tile,tm,K)}<h2 class="ttl">${tile.l}</h2><p class="desc">動いた先なので、ここでは止まるだけです。</p><div id="after"></div>`,sc);foot($('after'));return;}
+    fwd?sfx.ok():sfx.ng();
+    openCard(`${head(tile,tm,K)}<h2 class="ttl">${tile.l}</h2><p class="desc">${tile.d}</p><div class="money ${fwd?'plus':'minus'}">${tile.n}マス${fwd?'進む！':'戻る…'}</div><div id="after"></div>`,sc);
+    foot($('after'),`${tile.n}マス${fwd?'進む':'戻る'}`,()=>{$('ov').hidden=true;fwd?move(tm,tile.n,true):moveBack(tm,tile.n);});return;}
+  case 'iv': case 'talk': talk(tm,tile);return;
+  case 'read': readTile(tm,tile);return;
+  case 'start':
+    openCard(`${head(tile,tm)}<h2 class="ttl">スタートに戻ってしまった！</h2><p class="desc">ここからもう一度がんばろう。</p><div id="after"></div>`,sc);foot($('after'));return;
+  }
+}
+function qText(Q,rev){
+  let h=esc(Q.q);
+  if(Q.c==='o'){
+    const slots=Q.a.map((p,i)=>`<span class="slot${i===Q.s?' star':''}${rev?' fill':''}">${rev?esc(p):(i===Q.s?'★':'&nbsp;')}</span>`).join('');
+    return h.replace('＃',slots);
+  }
+  h=h.replace(/〔(.+?)〕/g,(m,w)=>`<span class="ul">${w}</span>${rev?`<span class="ansnote">→ ${esc(Q.correct)}</span>`:''}`);
+  return h.replace(/＿/g,rev?`<span class="blank filled">${esc(Q.correct)}</span>`:'<span class="blank">&nbsp;</span>');
+}
+function quizHTML(Q,disabled){
+  const cat=QCAT[catOf(Q)];
+  return `<p class="inst">${lvTag(Q.lv)}<span class="qcat" style="--kc:${cat.c}">${cat.n}</span>${Q.id?'<span class="qcat" style="--kc:var(--muted)">自作</span>':''}${INST[Q.c]}</p>
+  <p class="qs" id="qs">${qText(Q,false)}</p>
+  <div class="qtimer" id="qtimer" hidden><div class="tbar"><i></i></div><span class="tnum">0</span></div>
+  <div class="opts">${Q.order.map((o,i)=>`<button class="opt" type="button" data-v="${esc(o)}"${disabled?' disabled':''}><span class="k">${i+1}</span><span>${esc(o)}</span></button>`).join('')}</div>`;
+}
+function wireOpts(){document.querySelectorAll('.opt').forEach(b=>b.addEventListener('click',()=>{if(!b.disabled&&S.q)S.q.handler(b)}))}
+function reveal(){
+  stopAnswerTimer();
+  document.querySelectorAll('.opt').forEach(b=>{b.disabled=true;if(b.dataset.v===S.q.correct)b.classList.add('right')});
+  $('qs').innerHTML=qText(S.q,true);
+}
+function verdictHTML(cls,label,delta,ex){
+  return `<div class="verdict ${cls}">${label}${delta?`<span class="money ${delta>0?'plus':'minus'}" style="font-size:1em">${sign(delta)}</span>`:''}${ex?`<span class="ex">${esc(ex)}</span>`:''}</div>`;
+}
+/* answer timer */
+let qTimer=null;
+let qTotal=0,qT0=0;
+// share of the time still left when answering (null when there is no timer)
+function timeLeftFrac(){if(!qTimer||!qTotal)return null;return Math.max(0,(qTotal-(performance.now()-qT0))/qTotal);}
+// fast answers earn extra: first third of the time +50%, second third +25%
+function speedBonus(win,frac){if(frac==null||win<=0)return 0;if(frac>=2/3)return Math.ceil(win*.5);if(frac>=1/3)return Math.ceil(win*.25);return 0;}
+function extendAnswerTimer(sec){if(qTimer)qTotal+=sec*1000;}
+function startAnswerTimer(onTimeout,secs){
+  stopAnswerTimer();const len=secs||S.qtime;if(!len)return;
+  const box=$('qtimer');if(!box)return;box.hidden=false;
+  qTotal=len*1000;const t0=performance.now();qT0=t0;let lastSec=null;
+  const tick=()=>{
+    const left=Math.max(0,qTotal-(performance.now()-t0)),sec=Math.ceil(left/1000);
+    box.querySelector('.tbar i').style.transform=`scaleX(${Math.min(1,left/qTotal)})`;box.querySelector('.tnum').textContent=sec;
+    box.classList.toggle('low',sec<=5);
+    if(sec!==lastSec){lastSec=sec;if(sec<=3&&sec>0)sfx.beep();}
+    if(left<=0){stopAnswerTimer();onTimeout();}
+  };
+  tick();qTimer=setInterval(tick,100);
+}
+function stopAnswerTimer(){if(qTimer){clearInterval(qTimer);qTimer=null}}
+/* mistakes */
+function recordMiss(Q,teamNames){
+  const key=Q.lv+'|'+Q.c+'|'+Q.q;let m=S.misses.find(x=>x.key===key);
+  if(!m){m={key,lv:Q.lv,c:Q.c,q:Q.q,a:Q.a||null,s:Q.s??null,correct:Q.correct,ex:Q.ex||'',teams:[],n:0};S.misses.push(m);if(S.misses.length>80)S.misses.shift();}
+  m.n++;teamNames.forEach(n=>{if(!m.teams.includes(n))m.teams.push(n)});
+}
+function gateHTML(Q,battle,extra){
+  const cat=QCAT[catOf(Q)];
+  return `<div class="gate" id="gate">${extra||''}<button type="button" class="gatebtn" id="gateBtn">問題スタート！</button>
+    <span class="gatehint">${lvTag(Q.lv)}<span class="qcat" style="--kc:${cat.c};background:var(--kc);color:#fff;border-radius:8px;padding:2px 10px">${cat.n}</span>${S.qtime?`制限時間 ${S.qtime}秒（早く答えるとボーナス）`:'時間は無制限'}・${battle?'全チームで準備してね':'チームで準備ができたら押してね'}</span></div>`;
+}
+function armGate(onStart){
+  const b=$('gateBtn');
+  b.addEventListener('click',()=>{if(!S.q||S.q.started)return;S.q.started=true;$('gate').remove();$('qbody').hidden=false;sfx.card();onStart();},{once:true});
+  b.focus();
+}
+function startQuiz(tm,tile,kind,lv,cat,title,desc,win,lose,onDone){
+  const Q=drawQ(lv,cat);S.q={...Q,done:false,bets:{}};
+  openCard(`${head(tile,tm,kind)}<h2 class="ttl">${title}</h2><p class="desc">${desc}</p>${gateHTML(Q,false,betHTML(tm))}<div class="qbody" id="qbody" hidden><div id="betsum"></div>${helpHTML(tm)}${quizHTML(Q)}</div><div id="after"></div>`,STAGES[tile.s].c);
+  wireBets();wireHelps(tm);
+  const finish=(ok,label,btn)=>{
+    if(S.q.done)return;S.q.done=true;const frac=ok?timeLeftFrac():null;stopAnswerTimer();lockHelps();
+    if(btn&&!ok)btn.classList.add('wrong');
+    document.querySelectorAll('.opt').forEach(o=>o.disabled=true);
+    const sb=ok?speedBonus(win,frac):0;const d=ok?win+sb:lose;tm.money+=d;const br=settleBets(ok);
+    render();ok?sfx.ok():sfx.ng();
+    if(!ok)recordMiss(S.q,[tm.name]);
+    const end=()=>{onDone?onDone(ok):foot($('after'));};
+    if(!ok&&S.opts.steal&&S.teams.length>1){
+      stealPhase(tm,win>0?Math.max(1,Math.ceil(win/2)):2,verdictHTML('ng',label,d,'')+br,end);return;
+    }
+    reveal();
+    $('after').innerHTML=verdictHTML(ok?'ok':'ng',label,d,(sb?`スピードボーナス ${sign(sb)} をふくむ　`:'')+S.q.ex)+br;
+    end();
+  };
+  S.q.handler=b=>{const ok=b.dataset.v===S.q.correct;finish(ok,ok?'正解！':'ざんねん…',b);};
+  wireOpts();armGate(()=>{$('betsum').innerHTML=betSummary();startAnswerTimer(()=>finish(false,'時間切れ！'));const o=document.querySelector('.opt');if(o)o.focus();});
+}
+async function jobRoulette(tm,ok){
+  const list=ok?GOOD_JOBS:NORMAL_JOBS;const final=pickOne(list);
+  const el=$('after');el.insertAdjacentHTML('beforeend',`<div class="jobbox" id="jobbox"><span class="jobname" id="jobname">…</span><span class="jobsal" id="jobsal"></span></div>`);
+  $('jobbox').scrollIntoView({block:'nearest'});
+  let i=rnd(list.length);
+  for(let k=0;k<16;k++){$('jobname').textContent=list[i%list.length].n;sfx.tick();i++;await wait(60+k*k*1.6);}
+  $('jobname').textContent=final.n;$('jobsal').textContent=`給料日ごとに ${sign(final.sal)}`;$('jobbox').classList.add('fixed');
+  tm.job=final;render();sfx.fan();foot(el);
+}
+
+/* shop: buy one of three properties (Momotetsu-style) */
+function shop(tm,tile){
+  if(S.opts.read){
+    readChallenge(tm,tile,tile.l,'買う前に、物件の説明や契約書を読みがななしで読もう。上手に読めたら、値引きしてもらえます。','shop','◎ 2割引き／○ 1割引き／△ 値引きなし',
+      j=>{const off=[0,0,.1,.2][j];
+        $('after').innerHTML=verdictHTML(j>=2?'ok':'neutral',['','値引きはなし','1割引きしてもらえた！','2割引きしてもらえた！'][j],0,'');
+        $('after').insertAdjacentHTML('beforeend','<div class="foot"><button class="next" type="button" id="toShop">物件を見る</button></div>');
+        $('toShop').addEventListener('click',()=>showShop(tm,tile,off),{once:true});$('toShop').focus();});
+    return;}
+  showShop(tm,tile,0);
+}
+function showShop(tm,tile,off){
+  const offer=shuffle(PROPS).slice(0,3).sort((a,b)=>a.p-b.p);
+  const price=p=>Math.max(1,Math.round(p.p*(1-off)));
+  openCard(`${head(tile,tm,KIND.shop)}<h2 class="ttl">${tile.l}</h2>
+    <p class="desc">物件を1つ買えます。給料日ごとに収益が入り、最後は物件の値段がそのまま総資産になります。${off?`<b style="color:var(--ok)">${off*10}割引き！</b>`:''}いまの所持金：<b>${yen(tm.money)}</b></p>
+    <div class="shop" id="shopList">${offer.map(p=>`<button class="prop" type="button" data-id="${p.id}"${tm.money<price(p)?' disabled':''}><span class="pn">${p.n}</span><span class="pr">${off?`<s style="opacity:.6">${yen(p.p)}</s> `:''}${yen(price(p))}</span><span>給料日に ${sign(p.r)}</span>${tm.money<price(p)?'<span class="lack">お金が足りない</span>':''}</button>`).join('')}</div>
+    <div id="after"><div class="foot"><button class="next alt" type="button" id="skipBuy">買わない</button></div></div>`,STAGES[tile.s].c);
+  document.querySelectorAll('.prop').forEach(b=>b.addEventListener('click',()=>{
+    if(b.disabled)return;const p=PROP[b.dataset.id];tm.money-=price(p);tm.props.push(p.id);render();sfx.fan();
+    $('shopList').remove();$('after').innerHTML=verdictHTML('ok',`${p.n}を買った！`,0,`給料日ごとに ${sign(p.r)}`);foot($('after'));
+  }));
+  $('skipBuy').addEventListener('click',next,{once:true});
+}
+
+/* battle: everyone answers; teacher picks who raised a hand first */
+function battle(tm,tile){
+  if(S.teams.length===1){const lv=pickOne(S.levels),w=LV[lv].battle;
+    startQuiz(tm,tile,KIND.battle,lv,'any',tile.l,`ソロなので、ひとりで答えよう！ 正解すると <b style="color:var(--ok)">${sign(w)}</b>、まちがえると <b style="color:var(--ng)">${sign(-BATTLE_MISS)}</b>`,w,-BATTLE_MISS);return;}
+  const lv=pickOne(S.levels);const WIN=LV[lv].battle;
+  const Q=drawQ(lv,'any');S.q={...Q,team:null,out:new Set(),done:false};
+  openCard(`${head(tile,tm,KIND.battle)}<h2 class="ttl">${tile.l}</h2>
+    <p class="desc">全チームで答えよう！先に手を挙げたチームを選んでから、答えを押してください。正解は <b style="color:var(--ok)">${sign(WIN)}</b>、まちがいは <b style="color:var(--ng)">${sign(-BATTLE_MISS)}</b></p>
+    ${gateHTML(Q,true)}<div class="qbody" id="qbody" hidden>${quizHTML(Q,true)}<div class="pick" id="pick"></div></div><div id="after"></div>`,STAGES[tile.s].c);
+  const finish=(html,miss)=>{if(S.q.done)return;S.q.done=true;reveal();$('pick').innerHTML='';
+    if(miss)recordMiss(S.q,miss);$('after').innerHTML=html;foot($('after'));};
+  const outNames=()=>S.teams.filter(t=>S.q.out.has(t)).map(t=>t.name);
+  const renderPick=()=>{
+    const left=S.teams.filter(t=>!S.q.out.has(t));
+    $('pick').innerHTML=`<span class="lab">手を挙げたチーム：</span>`+left.map(t=>`<button class="tbtn" type="button" style="--tc:${t.color}" aria-pressed="${S.q.team===t}" data-i="${S.teams.indexOf(t)}"><span class="dot" style="--tc:${t.color}"></span>${esc(t.name)}</button>`).join('')+`<button class="tbtn none" type="button" id="noneBtn">だれもわからない</button>`;
+    $('pick').querySelectorAll('.tbtn[data-i]').forEach(b=>b.addEventListener('click',()=>{
+      S.q.team=S.teams[+b.dataset.i];renderPick();
+      document.querySelectorAll('.opt').forEach(o=>{if(!o.classList.contains('wrong'))o.disabled=false});
+    }));
+    $('noneBtn').addEventListener('click',()=>finish(verdictHTML('neutral','正解はこれ！',0,S.q.ex),['（全チーム）']));
+  };
+  S.q.handler=b=>{
+    if(S.q.done||!S.q.team)return;const t=S.q.team;
+    if(b.dataset.v===S.q.correct){const sb=speedBonus(WIN,timeLeftFrac());t.money+=WIN+sb;render();sfx.ok();finish(verdictHTML('ok',`${esc(t.name)} 正解！`,WIN+sb,(sb?`スピードボーナス ${sign(sb)} をふくむ　`:'')+S.q.ex),S.q.out.size?outNames():null);}
+    else{
+      t.money-=BATTLE_MISS;render();sfx.ng();b.classList.add('wrong');b.disabled=true;
+      S.q.out.add(t);S.q.team=null;toast(`${t.name} ${sign(-BATTLE_MISS)}`,true);
+      document.querySelectorAll('.opt').forEach(o=>o.disabled=true);
+      if(S.q.out.size>=S.teams.length)finish(verdictHTML('ng','だれも正解できなかった…',0,S.q.ex),outNames());else renderPick();
+    }
+  };
+  renderPick();wireOpts();
+  armGate(()=>{startAnswerTimer(()=>{sfx.ng();finish(verdictHTML('ng','時間切れ！',0,S.q.ex),S.q.out.size?outNames():['（全チーム）']);});
+    const t=document.querySelector('#pick .tbtn');if(t)t.focus();});
+}
+
+/* risk: safe small reward or gamble on a question */
+const riskWin=lv=>Math.round(8*LV[lv].m), riskLose=lv=>-Math.max(1,Math.round(5*LV[lv].m));
+function risk(tm,tile){
+  const mult=tm.double?2:1;
+  const range=S.levels.map(lv=>riskWin(lv)*mult);
+  openCard(`${head(tile,tm,KIND.risk)}<h2 class="ttl">${tile.l}</h2><p class="desc">安全に行く？それとも勝負する？チームで相談して決めよう。</p>
+    <div class="choice" id="choice"><button class="cbtn safe" type="button" id="safeBtn">安全に行く<small>${amt(2)}円もらって終わり</small></button>
+    <button class="cbtn bet" type="button" id="betBtn">勝負する<small>レベルを選んで、正解なら最大${sign(Math.max(...range))}</small></button></div><div id="after"></div>`,STAGES[tile.s].c);
+  $('safeBtn').addEventListener('click',()=>{tm.money+=2;render();sfx.coin();$('choice').remove();$('after').innerHTML=verdictHTML('neutral','手堅い！',2);foot($('after'));});
+  $('betBtn').addEventListener('click',()=>{
+    chooseLevel(tm,tile,KIND.risk,`勝負！ ${tile.l}`,lv=>[riskWin(lv)*mult,riskLose(lv)],lv=>{
+      const dbl=tm.double;tm.double=false;render();
+      const win=riskWin(lv)*(dbl?2:1),lose=riskLose(lv);
+      startQuiz(tm,tile,KIND.risk,lv,'any',`勝負！ ${tile.l}`,`正解すると <b style="color:var(--ok)">${sign(win)}</b>${dbl?'（2倍！）':''}、まちがえると <b style="color:var(--ng)">${sign(lose)}</b>`,win,lose);
+    });
+  });
+}
+
+/* chance card */
+async function chance(tm,tile){
+  const c=pickOne(CHANCE.filter(x=>x.t!=='oharai'||(S.bomb.on&&S.bomb.appeared)));
+  openCard(`${head(tile,tm,KIND.chance)}<h2 class="ttl">チャンスカード</h2><div class="ccard"><div class="cin" id="cin"><div class="cback">？</div><div class="cfront">${typeof c.l==="function"?c.l():c.l}</div></div></div><div id="after"></div>`,STAGES[tile.s].c);
+  await wait(800);$('cin').classList.add('flipped');sfx.card();await wait(750);
+  const el=$('after');const others=S.teams.filter(t=>t!==tm);let msg='';
+  switch(c.t){
+    case 'fwd': render();foot(el,'2マス進む',()=>{$('ov').hidden=true;move(tm,c.n,true)});return;
+    case 'oharai':{
+      if(S.bomb.team===S.teams.indexOf(tm)){const to=richest(tm);
+        if(to){S.bomb.team=S.teams.indexOf(to);if(!S.bomb.king)S.bomb.turns=0;msg=verdictHTML('ok',`${bombName()}は${esc(to.name)}へ飛んでいった！`,0);sfx.ok();}
+        else{S.bomb.team=-1;msg=verdictHTML('ok','貧乏神はどこかへ消えた！',0);sfx.ok();}}
+      else{tm.money+=1;msg=verdictHTML('neutral','貧乏神はついていなかった。お守りをもらった',1);sfx.coin();}
+      break;}
+    case 'back': tm.pos=Math.max(0,tm.pos-c.n);S.last=tm.pos;sfx.ng();break;
+    case 'skip': tm.skip=true;sfx.ng();break;
+    case 'double': tm.double=true;sfx.ok();break;
+    case 'collect': others.forEach(t=>t.money-=c.a);tm.money+=c.a*others.length;msg=verdictHTML('ok','',c.a*others.length);sfx.coin();break;
+    case 'give': others.forEach(t=>t.money+=c.a);tm.money-=c.a*others.length;msg=verdictHTML('ng','',-c.a*others.length);sfx.ng();break;
+    case 'again': S.again=true;sfx.ok();break;
+    case 'rich':{
+      const top=[...others].sort((a,b)=>b.money-a.money)[0];
+      if(top&&top.money>tm.money){top.money-=c.a;tm.money+=c.a;msg=verdictHTML('ok',`${esc(top.name)}から`,c.a);sfx.coin();}
+      else msg=verdictHTML('neutral','自分がいちばんお金持ちだった…何も起きない',0);
+      break;}
+    case 'cash': tm.money+=c.a;msg=verdictHTML('ok','',c.a);sfx.coin();break;
+    case 'storm':{
+      if(tm.props.length){const lost=[...tm.props].sort((a,b)=>PROP[a].p-PROP[b].p)[0];tm.props.splice(tm.props.indexOf(lost),1);
+        msg=verdictHTML('ng',`${PROP[lost].n}がこわれた…`,-PROP[lost].p);sfx.ng();}
+      else msg=verdictHTML('neutral','物件を持っていなかったので無事だった',0);
+      break;}
+    case 'boom':{
+      const g=tm.props.length*c.a;tm.money+=g;
+      msg=g?verdictHTML('ok',`物件${tm.props.length}件分`,g):verdictHTML('neutral','物件を持っていないので何ももらえない…',0);if(g)sfx.coin();
+      break;}
+  }
+  render();el.innerHTML=msg;foot(el,c.t==='again'?'もう一度回す':'次のチームへ');
+}
+
+function next(){
+  stopAnswerTimer();$('ov').hidden=true;S.q=null;
+  if(S.teams.every(t=>t.done)){endGame();return;}
+  if(timeUp){endGame();return;}
+  if(bombStep())return;
+  let t=S.turn;
+  if(S.again&&!S.teams[t].done){S.again=false;toast(`${S.teams[t].name} もう一度！`,true);}
+  else{
+    S.again=false;
+    for(let guard=0;guard<20;guard++){
+      t=(t+1)%S.teams.length;const tm=S.teams[t];
+      if(tm.done)continue;
+      if(tm.skip){tm.skip=false;toast(`${tm.name}は1回休み`,true);continue;}
+      break;
+    }
+  }
+  S.turn=t;S.busy=false;S.last=null;S.bombDone=false;S.bombMoved=false;render();$('spinRes').textContent=`${S.teams[t].name}の番です`;
+  save();
+}
+function endGame(){
+  stopAnswerTimer();S.over=true;S.busy=false;$('ov').hidden=true;render();save();showResults();
+}
+function showSoloResult(){
+  const t=S.teams[0],a=assets(t),key='n2life-best-'+S.len;let best=null;
+  try{best=JSON.parse(localStorage.getItem(key)||'null');}catch(e){}
+  const isBest=!best||a>best.a;
+  if(isBest){try{localStorage.setItem(key,JSON.stringify({a,at:new Date().toISOString()}));}catch(e){}}
+  const title=a>=150?'大富豪':a>=100?'お金持ち':a>=60?'堅実家':a>=30?'ふつうの人生':'これからがんばろう';
+  sfx.fan();
+  openCard(`<h2 class="ttl">ソロの結果</h2><p class="desc">${esc(t.name)}の人生、おつかれさまでした！（${S.len}マス）</p>
+    <div class="bcard"><div><div class="money ${a<0?'minus':'plus'}">${yen(a)}</div><p class="desc">称号：<b>${title}</b></p></div>
+    <div class="btext"><p class="desc">${t.money<0?'借金'+amt(t.money):'現金'+amt(t.money)} ＋ 物件${amt(propValue(t))}${t.job?'｜'+esc(t.job.n):''}</p>
+    <p class="desc">${isBest?'<b style="color:var(--ok)">自己ベスト更新！</b>':`自己ベスト：<b>${yen(best.a)}</b>`}</p></div></div>
+    <div id="after"><div class="foot">${S.misses.length?`<button class="next alt" type="button" id="resMiss">まちがえた問題を見る（${S.misses.length}問）</button>`:''}</div></div>`,'var(--goal)');
+  if($('resMiss'))$('resMiss').addEventListener('click',()=>showMisses(showResults));
+  foot($('after'),'もう一度遊ぶ',()=>{newGame(1);save();});
+}
+function showResults(){
+  if(S.teams.length===1){showSoloResult();return;}
+  const r=[...S.teams].sort((a,b)=>assets(b)-assets(a));sfx.fan();
+  const titles=['大富豪','お金持ち','堅実家','のんびり屋','がんばった賞'];
+  openCard(`<h2 class="ttl">けっか発表</h2><p class="desc">総資産（所持金＋物件）がいちばん多いチームの勝ち！</p>
+    <ol class="rank">${r.map((t,i)=>{const pv=propValue(t),a=assets(t);
+      const title=a<0?'借金生活':titles[i];
+      const detail=`${t.money<0?'借金'+amt(t.money):'現金'+amt(t.money)} ＋ 物件${amt(pv)}${t.props.length?'（'+t.props.map(id=>PROP[id].n).join('・')+'）':''}${t.done?'・'+t.done+'着ゴール':''}`;
+      return `<li><span class="pl">${i+1}位</span><span class="dot" style="--tc:${t.color}"></span><span style="min-width:0">${esc(t.name)}<span class="title">${title}</span><small>${t.job?esc(t.job.n)+'｜':''}${detail}</small></span><span class="tot"><span class="money${a<0?' minus':''}">${yen(a)}</span></span></li>`}).join('')}</ol>
+    <div id="after"><div class="foot">${S.misses.length?`<button class="next alt" type="button" id="resMiss">まちがえた問題を見る（${S.misses.length}問）</button>`:''}</div></div>`,'var(--goal)');
+  if($('resMiss'))$('resMiss').addEventListener('click',()=>showMisses(showResults));
+  foot($('after'),'もう一度遊ぶ',()=>{newGame(S.teams.length);save();});
+}
+
+/* ---------- mistakes review ---------- */
+function showMisses(back){
+  const list=[...S.misses].sort((a,b)=>b.n-a.n);
+  const items=list.length?list.map((m,i)=>{const cat=QCAT[catOf(m)];
+    return `<li class="miss"><div class="inst"><span class="mno">${i+1}</span>${lvTag(m.lv)}<span class="qcat" style="--kc:${cat.c}">${cat.n}</span><span class="mcnt">${m.n}回まちがい</span></div>
+      <p class="mq">${qText(m,true)}</p>${m.ex?`<p class="mex">${esc(m.ex)}</p>`:''}<p class="mteam">まちがえたチーム：${m.teams.map(esc).join('、')}</p></li>`}).join('')
+    :'<p class="desc">まだまちがえた問題はありません。</p>';
+  openCard(`<h2 class="ttl">まちがえた問題</h2><p class="desc">このゲームでまちがえた問題です。答えを入れた形で表示しています。復習に使ってください。</p>
+    <ol class="misses">${items}</ol><div id="after"></div>`,'var(--k-battle)');
+  foot($('after'),back?'もどる':'閉じる',back||(()=>{$('ov').hidden=true}));
+}
+
+/* ---------- custom question editor ---------- */
+let edEditing=null, edLv='N2', edType='g';
+function toForm(q){
+  if(q.c==='o'){const [before,after]=q.q.split('＃');return {before,after,parts:q.a,star:q.s+1,ex:q.ex};}
+  return {text:q.q.replace(/＿/g,'（　）').replace(/〔(.+?)〕/g,'【$1】'),correct:q.o[0],wrong:q.o.slice(1),ex:q.ex};
+}
+function edFieldsHTML(f={}){
+  if(edType==='o')return `
+    <label class="fl">文の前の部分<input id="edBefore" value="${esc(f.before||'')}" placeholder="例：この仕事は、"></label>
+    <div class="fl">4つのパーツ（正しい順番で）<div class="parts">${[0,1,2,3].map(i=>`<input id="edP${i}" value="${esc((f.parts||[])[i]||'')}" placeholder="${i+1}番目">`).join('')}</div></div>
+    <div class="seg" id="edStar"><b>★の位置</b>${[1,2,3,4].map(n=>`<button type="button" data-v="${n}" aria-pressed="${(f.star||2)===n}">${n}番目</button>`).join('')}</div>
+    <label class="fl">文の後の部分<input id="edAfter" value="${esc(f.after||'')}" placeholder="例：無理だと思う。"></label>`;
+  const hint=edType==='yomi'||edType==='iikae'?'下線にする言葉を【　】で囲んでください。例：旅行を【延期】した。':'答えが入るところを（　）と書いてください。例：準備ができ（　）、出発しましょう。';
+  return `
+    <label class="fl">問題文<span class="hint">${hint}</span><textarea id="edText" rows="2">${esc(f.text||'')}</textarea></label>
+    <label class="fl">正解<input id="edCorrect" value="${esc(f.correct||'')}"></label>
+    <div class="fl">まちがいの選択肢（3つ）<div class="parts three">${[0,1,2].map(i=>`<input id="edW${i}" value="${esc((f.wrong||[])[i]||'')}">`).join('')}</div></div>`;
+}
+function showEditor(back){
+  const f=edEditing?toForm(CUSTOM.find(q=>q.id===edEditing)||{}):{};
+  const list=CUSTOM.length?CUSTOM.map(q=>{const prev=q.c==='o'?q.q.replace('＃','［'+q.a.join('／')+'］'):q.q.replace(/＿/g,'（　）').replace(/〔(.+?)〕/g,'【$1】');
+    return `<li class="cq${q.id===edEditing?' editing':''}">${lvTag(q.lv)}<span class="ctype">${TYPES[q.c]}</span><span class="ctext">${esc(prev)}</span><span class="cbtns"><button type="button" class="ghost" data-edit="${q.id}">直す</button><button type="button" class="ghost" data-del="${q.id}">消す</button></span></li>`}).join('')
+    :'<p class="hint">まだ自作問題はありません。上のフォームから追加してください。</p>';
+  openCard(`<h2 class="ttl">問題をつくる</h2>
+    <p class="desc">授業で習った文型や言葉を、自分で問題にできます。保存した問題はアカウントに残り、すべてのセーブデータで使えます。</p>
+    ${segHTML('qmodeSeg','出題のしかた',Object.keys(QMODES),QMODE,v=>QMODES[v])}
+    <div class="ed">
+      <h3 class="sub">${edEditing?'問題を直す':'新しい問題'}</h3>
+      ${segHTML('edLvSeg','レベル',LEVELS,edLv)}
+      ${segHTML('edTypeSeg','種類',Object.keys(TYPES),edType,v=>TYPES[v])}
+      <div id="edFields">${edFieldsHTML(f)}</div>
+      <label class="fl">解説（なくてもよい）<input id="edEx" value="${esc(f.ex||'')}" placeholder="例：〜次第＝〜したらすぐに"></label>
+      <p class="err" id="edErr" aria-live="polite"></p>
+      <div class="foot"><button type="button" class="next alt" id="edNew">${edEditing?'直すのをやめる':'入力を消す'}</button><button type="button" class="next" id="edSave">${edEditing?'上書き保存':'保存する'}</button></div>
+    </div>
+    <h3 class="sub">保存した問題（${CUSTOM.length}）</h3><ul class="clist">${list}</ul><div id="after"></div>`,'var(--k-o)');
+  wireSeg('qmodeSeg',v=>{QMODE=v;saveCustom();});
+  wireSeg('edLvSeg',v=>edLv=v);
+  wireSeg('edTypeSeg',v=>{const wasO=edType==='o';edType=v;if(wasO!==(v==='o')||true){$('edFields').innerHTML=edFieldsHTML({});wireStar();}});
+  const wireStar=()=>{if($('edStar'))wireSeg('edStar',()=>{});};wireStar();
+  $('edNew').addEventListener('click',()=>{edEditing=null;showEditor(back);});
+  $('edSave').addEventListener('click',()=>{
+    const ex=$('edEx').value.trim();let q;
+    const err=m=>{$('edErr').textContent=m;};
+    if(edType==='o'){
+      const parts=[0,1,2,3].map(i=>$('edP'+i).value.trim());
+      const star=+(document.querySelector('#edStar button[aria-pressed="true"]')||{dataset:{v:2}}).dataset.v-1;
+      if(parts.some(p=>!p))return err('4つのパーツをすべて入れてください。');
+      if(new Set(parts).size<4)return err('4つのパーツは、すべてちがう言葉にしてください。');
+      const before=$('edBefore').value.trim(),after=$('edAfter').value.trim();
+      if(!before&&!after)return err('文の前か後ろの部分を入れてください。');
+      q={c:'o',q:before+'＃'+after,a:parts,s:star,o:[parts[star],...parts.filter((_,i)=>i!==star)],ex:ex||('正しい順番：'+parts.join(' → '))};
+    }else{
+      let text=$('edText').value.trim();const correct=$('edCorrect').value.trim();
+      const wrong=[0,1,2].map(i=>$('edW'+i).value.trim());
+      if(!text)return err('問題文を入れてください。');
+      if(edType==='yomi'||edType==='iikae'){text=text.replace(/【(.+?)】/g,'〔$1〕');if(!text.includes('〔'))return err('下線にする言葉を【　】で囲んでください。');}
+      else{text=text.replace(/（\s*）|\(\s*\)|＿+|_{2,}/g,'＿');if(!text.includes('＿'))return err('答えが入るところを（　）と書いてください。');}
+      if(!correct||wrong.some(w=>!w))return err('正解と、まちがいの選択肢を3つ入れてください。');
+      if(new Set([correct,...wrong]).size<4)return err('選択肢は、すべてちがう言葉にしてください。');
+      q={c:edType,q:text,o:[correct,...wrong],ex};
+    }
+    q.lv=edLv;
+    if(edEditing){const i=CUSTOM.findIndex(x=>x.id===edEditing);q.id=edEditing;if(i>=0)CUSTOM[i]=q;else CUSTOM.push(q);}
+    else{q.id='c'+Date.now().toString(36)+rnd(1e6).toString(36);CUSTOM.push(q);}
+    saveCustom();toast(edEditing?'問題を直しました':'問題を保存しました',true);edEditing=null;updateToolBtns();showEditor(back);
+  });
+  document.querySelectorAll('[data-edit]').forEach(b=>b.addEventListener('click',()=>{
+    const q=CUSTOM.find(x=>x.id===b.dataset.edit);if(!q)return;edEditing=q.id;edLv=q.lv;edType=q.c;showEditor(back);}));
+  document.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',()=>{
+    if(!b.dataset.armed){b.dataset.armed='1';b.textContent='本当に消す';b.classList.add('warn');
+      setTimeout(()=>{if(b.isConnected){delete b.dataset.armed;b.textContent='消す';b.classList.remove('warn')}},4000);return;}
+    CUSTOM=CUSTOM.filter(x=>x.id!==b.dataset.del);if(edEditing===b.dataset.del)edEditing=null;saveCustom();updateToolBtns();showEditor(back);}));
+  foot($('after'),back?'もどる':'閉じる',back||(()=>{$('ov').hidden=true}));
+}
+
+
+/* ---------- scene conversations (interviews, shopping, office, teacher, friends) ---------- */
+const TALK_SCENES={
+  uni:{n:'大学の面接',who:'面接官',reg:'敬語'},
+  arbeit:{n:'アルバイトの面接',who:'店長',reg:'敬語'},
+  shop:{n:'買い物',who:'店員',reg:'丁寧語'},
+  office:{n:'事務室',who:'事務の人',reg:'丁寧語'},
+  teacher:{n:'先生と話す',who:'先生',reg:'敬語'},
+  friend:{n:'クラスの友達',who:'友達',reg:'カジュアル'},
+  jp:{n:'日本人の大学生',who:'日本人の友達',reg:'カジュアル'}};
+const REG_CLASS={'敬語':'k','丁寧語':'t','カジュアル':'c'};
+// s = situation, l = partner's line (the teacher reads it), t = what the student should do, h = hint
+const TALKS={
+uni:[
+ ['どうして本学を志望しましたか。','「〜に興味があり、こちらの大学で〜を[学びたいと考えた]から[です]」'],
+ ['大学で何を勉強したいですか。','「〜について[勉強したいと思っております]」'],
+ ['将来、どんな仕事をしたいですか。','「将来は〜に[なりたいと考えております]」'],
+ ['あなたの長所と短所を教えてください。','「私の長所は〜[ところです]。短所は〜ところですが、〜ように[しています]」'],
+ ['日本に来て、いちばん驚いたことは何ですか。','「いちばん[驚いたのは]、〜[ことです]」'],
+ ['日本語の勉強で、大変だったことは何ですか。','「〜が大変でしたが、毎日〜[ようにしました]」'],
+ ['卒業したら、日本で働きたいですか。','「日本で[働きたいと考えております]。なぜなら、〜[からです]」'],
+ ['最近、気になったニュースはありますか。','「〜という[ニュースが気になりました]。〜と[思います]」'],
+ ['高校時代に、がんばったことは何ですか。','「高校時代は〜に[力を入れました]」'],
+ ['あなたの国と日本の違いを、一つ説明してください。','「私の国では〜[のに対して]、日本では〜[ます]」'],
+ ['簡単に自己紹介をしてください。','「〜から[参りました]、〜と[申します]。よろしく[お願いいたします]」'],
+ ['入学したら、どんな活動をしてみたいですか。','「〜サークルに入って、〜を[してみたいです]」']]
+ .map(([l,h])=>({s:'大学の面接で、面接官に質問されました。',l,t:'面接官の質問に答えよう',h})),
+arbeit:[
+ ['どうしてこの店で働きたいと思いましたか。','「こちらのお店が好きで、ぜひ[働きたいと思った]からです」'],
+ ['週に何日、何時から何時まで働けますか。','「週に〜日、〜時から〜時まで[働けます]」'],
+ ['アルバイトの経験はありますか。','「はい、〜で〜を[していました]」'],
+ ['お客様に怒られたら、どうしますか。','「まず[お詫びして]、お客様のお話をよく[伺うようにします]」'],
+ ['あなたはどんな性格ですか。','「〜な人だと、よく[言われます]」'],
+ ['学校とアルバイトを、どうやって両立しますか。','「時間を決めて勉強して、授業に[遅れないように気をつけます]」'],
+ ['急に休むことになったら、どうしますか。','「できるだけ早く店長に[ご連絡して]、[ご迷惑をおかけしないように]します」'],
+ ['お客様が来たと思って、あいさつしてみてください。','「[いらっしゃいませ]。何名[様でしょうか]」'],
+ ['いつから働けますか。','「来週の月曜日から[働けます]」'],
+ ['最後に、何か質問はありますか。','「シフトについて[伺ってもよろしいでしょうか]」']]
+ .map(([l,h])=>({s:'アルバイトの面接で、店長に質問されました。',l,t:'店長の質問に答えよう',h})),
+shop:[
+ {s:'デパートの洋服売り場に来ました。',l:'いらっしゃいませ。何かお探しですか。',t:'冬に着るコートを探していると伝えよう',h:'「すみません、冬用のコートを[探しているんですが]…」'},
+ {s:'昨日買ったシャツが小さかったので、お店に持ってきました。',l:'どうなさいましたか。',t:'事情を説明して、交換してもらえるか聞こう',h:'「昨日買ったんですが、サイズが[合わなくて]…[交換していただけますか]」'},
+ {s:'ほしいくつが、お店にありませんでした。',l:'申し訳ございません。こちら、ただいま品切れでして…',t:'いつ入るか聞いて、取り寄せを頼もう',h:'「いつごろ[入りますか]。[取り寄せてもらえますか]」'},
+ {s:'気に入ったズボンを見つけました。',l:'何かございましたら、お声がけください。',t:'試着してもいいか聞こう',h:'「すみません、これ、[試着してもいいですか]」'},
+ {s:'レジでお金を払うところです。袋は持っています。',l:'袋はご利用になりますか。',t:'いらないと伝えて、カードで払いたいと言おう',h:'「いえ、[大丈夫です]。カードで[お願いします]」'},
+ {s:'友達へのプレゼントを買いました。',l:'こちらでよろしいですか。',t:'プレゼント用に包んでもらえるか聞こう',h:'「プレゼントなので、[包んでいただけますか]」'}],
+office:[
+ {s:'学生証をなくしてしまいました。学校の事務室に来ました。',l:'こんにちは。どうしましたか。',t:'事情を説明して、再発行をお願いしよう',h:'「学生証を[なくしてしまったんですが]、再発行を[お願いできますか]」'},
+ {s:'ビザの更新に、在学証明書が必要です。',l:'はい、何でしょうか。',t:'在学証明書がほしいと頼もう。理由も言おう',h:'「ビザの更新に必要なので、在学証明書を[発行していただきたいんですが]」'},
+ {s:'書類の書き方がわかりません。',l:'では、この書類に記入してください。',t:'どこに何を書けばいいか、質問しよう',h:'「すみません、ここには何を[書けばいいでしょうか]」'},
+ {s:'風邪で、授業を3日休みました。',l:'はい、どうしましたか。',t:'欠席届の出し方を聞こう',h:'「欠席届を[出したいんですが]、どう[すればいいですか]」'},
+ {s:'奨学金の申し込みの締め切りを、1日過ぎてしまいました。',l:'奨学金の受付は、昨日で終わりましたよ。',t:'謝って、まだ申し込めないか聞こう',h:'「締め切りを[過ぎてしまって申し訳ありません]。まだ[間に合いませんか]」'}],
+teacher:[
+ {s:'授業でわからないところがありました。授業のあと、先生のところへ行きます。',l:'どうしましたか。',t:'質問したいので、時間があるか聞こう',h:'「先生、少し[お時間よろしいでしょうか]」'},
+ {s:'宿題を家に忘れてきてしまいました。',l:'宿題、出してください。',t:'謝って、いつ出すか言おう',h:'「[申し訳ありません]。家に[忘れてしまいました]。明日必ず[提出します]」'},
+ {s:'大学の入試で、推薦状が必要になりました。',l:'はい、何ですか。',t:'推薦状を書いてもらえるか、お願いしよう',h:'「大学の入試で必要なので、推薦状を[書いていただけないでしょうか]」'},
+ {s:'来週の月曜日に、大学の面接があります。',l:'どうしましたか。',t:'授業を休んでもいいか、許可をもらおう',h:'「来週の月曜日に面接があるので、[休ませていただけないでしょうか]」'},
+ {s:'先生が、作文をほめてくれました。',l:'この作文、とてもよく書けていますね。',t:'謙遜しながら、お礼を言おう',h:'「ありがとうございます。先生の[おかげです]」'},
+ {s:'先生に借りていた本を返します。',l:'あ、あの本、読みましたか。',t:'お礼と、本の感想を一言言おう',h:'「[お借りしていた]本、ありがとうございました。とても[参考になりました]」'}],
+friend:[
+ {s:'クラスの友達と、休み時間に話しています。',l:'週末、何するの？',t:'予定を答えて、相手を誘ってみよう',h:'「特に予定[ないよ]。一緒に映画[見に行かない]？」'},
+ {s:'明日、友達と遊ぶ約束をしていました。',l:'ごめん、明日行けなくなっちゃった…',t:'気にしないでと言って、別の日を提案しよう',h:'「そっか、[大丈夫だよ]。じゃあ、来週は[どう]？」'},
+ {s:'昨日、授業を休みました。友達がノートを取っていました。',l:'昨日の授業、けっこう大事だったよ。',t:'ノートを見せてもらえるか頼もう',h:'「ほんと？ ノート[見せてもらってもいい]？」'},
+ {s:'友達が、昨日見た映画の話をしています。',l:'あの映画、すごくよかったよ！',t:'興味を示して、くわしく聞こう',h:'「へえ、[どんな話]？ 私も[見てみたい]！」'},
+ {s:'友達が、今日はずっと元気がありません。',l:'はあ……',t:'心配して、声をかけよう',h:'「[どうしたの]？ 大丈夫？ 何か[あった]？」'}],
+jp:[
+ {s:'大学のオープンキャンパスで、日本人の学生と話しています。',l:'どこの国から来たの？',t:'答えて、自分の国のいいところを一つ紹介しよう',h:'「〜から[来たよ]。〜がすごく[おいしいんだ]」'},
+ {s:'日本人の大学生の友達と、カフェにいます。',l:'日本の生活、もう慣れた？',t:'答えて、大変なことを一つ話そう',h:'「だいぶ[慣れたけど]、〜がまだちょっと[大変かな]」'},
+ {s:'日本人の友達に、サークルのイベントに誘われました。',l:'今度サークルの飲み会あるんだけど、来ない？',t:'行きたいけど、お酒は飲めないと伝えよう',h:'「[行きたい]！ でも、お酒はあんまり[飲めないんだけど]、大丈夫？」'},
+ {s:'日本人の大学生と知り合いました。大学のことを知りたいです。',l:'何か聞きたいことある？',t:'大学の授業やサークルについて質問しよう',h:'「大学の授業って[大変]？ どんなサークルに[入ってるの]？」'},
+ {s:'日本人の友達と、連絡先を交換したいです。',l:'今日は楽しかったね！',t:'LINEを交換しようと言って、また会う約束をしよう',h:'「うん！ LINE[交換しない]？ 今度ご飯[行こうよ]」'},
+ {s:'日本人の友達が、あなたの服をほめました。',l:'その服、かわいいね！',t:'お礼を言って、一言つけ加えよう',h:'「ありがとう！ 〜で[買ったんだ]」'}]};
+// apology / excuse challenges for bad-event squares (keyed by square label)
+const SORRY={
+ '車が故障':{who:'友達',reg:'カジュアル',s:'車が故障して、友達との約束に1時間も遅れてしまった。',l:'もう、1時間も待ったよ！',t:'理由を説明して、謝ろう',h:'「ほんとに[ごめん]！ 実は車が[故障しちゃって]…」'},
+ '腰を痛めた':{who:'店長',reg:'敬語',s:'腰を痛めて、明日のアルバイトに行けなくなった。店長に電話します。',l:'はい、店長の田中です。',t:'事情を説明して、休ませてほしいと頼もう',h:'「[申し訳ありません]。実は腰を[痛めてしまいまして]、明日[休ませていただけないでしょうか]」'},
+ '詐欺にあった':{who:'家族',reg:'カジュアル',s:'うまい話にだまされて、家族のお金をなくしてしまった。',l:'あのお金、どうしたの？',t:'正直に話して、謝ろう',h:'「[ごめんなさい]。実は、[だまされちゃって]…」'},
+ '世界一周旅行':{who:'友達',reg:'カジュアル',s:'旅行に夢中で、友達の家の猫にえさをあげる約束を忘れていた！',l:'ねえ、猫のえさ、どうなってる？',t:'謝って、これからどうするか言おう',h:'「[ごめん]！ すっかり[忘れてた]。今すぐ[行くね]」'}};
+const SORRY_ANY=[
+ {who:'先生',reg:'敬語',s:'授業に30分遅刻してしまった。',l:'遅かったですね。どうしましたか。',t:'理由を説明して、謝ろう',h:'「遅れて[申し訳ありません]。実は電車が[遅れてしまって]…」'},
+ {who:'図書館の人',reg:'丁寧語',s:'図書館で借りた本を汚してしまった。',l:'この本、どうしましたか。',t:'謝って、どうすればいいか聞こう',h:'「すみません、[汚してしまいました]。[弁償したほうがいいでしょうか]」'}];
+/* ---------- additional conversation scenes and tasks ---------- */
+Object.assign(TALK_SCENES,{
+  hospital:{n:'病院・薬局',who:'病院の人',reg:'丁寧語'},
+  station:{n:'駅・道をたずねる',who:'駅員',reg:'丁寧語'},
+  restaurant:{n:'レストラン',who:'店員',reg:'丁寧語'},
+  housing:{n:'部屋さがし・大家さん',who:'大家さん',reg:'丁寧語'}});
+Object.assign(TALKS,{
+hospital:[
+ {w:'受付',s:'病院の受付に来ました。昨日から熱があって、のどが痛いです。',l:'今日はどうされましたか。',t:'症状を説明しよう',h:'「昨日から熱が[あって]、のども[痛いんです]」'},
+ {w:'薬剤師',s:'薬局で、薬を受け取ります。お薬手帳は持っていません。',l:'お薬手帳はお持ちですか。',t:'持っていないと伝えて、薬の飲み方を聞こう',h:'「いえ、[持っていません]。この薬は、いつ[飲めばいいですか]」'},
+ {w:'医者',s:'学校を3日休みました。学校に出す診断書が必要です。',l:'ほかに何か気になることはありますか。',t:'診断書を書いてもらえるか頼もう',h:'「学校に出したいので、診断書を[書いていただけますか]」'},
+ {w:'受付',s:'保険証を家に忘れてきてしまいました。',l:'保険証をお願いします。',t:'事情を言って、どうすればいいか聞こう',h:'「すみません、家に[忘れてしまったんですが]、どう[すればいいでしょうか]」'}],
+station:[
+ {w:'駅員',s:'駅で、どの電車に乗ればいいかわかりません。新宿へ行きたいです。',l:'どうしましたか。',t:'新宿へ行く電車が何番線か聞こう',h:'「すみません、新宿へ行くには、何番線に[乗ればいいですか]」'},
+ {w:'通りがかりの人',s:'道に迷いました。近くを歩いている人に声をかけます。',l:'はい？',t:'郵便局への行き方を聞こう',h:'「すみません、この近くに郵便局は[ありませんか]。どう[行けばいいでしょうか]」'},
+ {w:'駅員',s:'さっき乗った電車に、傘を忘れてしまいました。',l:'はい、どうされましたか。',t:'忘れ物のことを伝えて、探してもらおう',h:'「さっきの電車に傘を[忘れてしまったんですが]、[探していただけますか]」'},
+ {w:'駅員',s:'ICカードのチャージのしかたがわかりません。',l:'何かお困りですか。',t:'チャージのしかたを教えてもらおう',h:'「カードのチャージのしかたを[教えていただけますか]」'}],
+restaurant:[
+ {w:'店員',s:'初めてのレストランです。何を頼めばいいかわかりません。',l:'ご注文はお決まりですか。',t:'おすすめを聞いて、注文しよう',h:'「おすすめは[何ですか]。じゃあ、それを[お願いします]」'},
+ {w:'店員',s:'ラーメンを頼んだのに、カレーが来ました。',l:'お待たせしました。カレーです。',t:'頼んだものと違うと伝えよう',h:'「すみません、ラーメンを[頼んだんですが]…」'},
+ {w:'店員',s:'えびアレルギーがあります。',l:'ご注文をどうぞ。',t:'アレルギーのことを伝えて、えびが入っていないか聞こう',h:'「えびアレルギーなんですが、この料理にえびは[入っていますか]」'},
+ {w:'店員',s:'友達と食事をしました。お金は別々に払いたいです。',l:'お会計はご一緒でよろしいですか。',t:'別々に払いたいと伝えよう',h:'「すみません、[別々に]お願い[できますか]」'}],
+housing:[
+ {w:'不動産屋',s:'不動産屋で、部屋をさがしています。駅から近くて、家賃5万円以下がいいです。',l:'どんなお部屋をお探しですか。',t:'希望を伝えよう',h:'「駅から近くて、家賃が5万円[以下の部屋を探しているんですが]」'},
+ {w:'大家さん',s:'部屋のエアコンが壊れました。大家さんに電話します。',l:'はい、山田です。',t:'名前を言って、修理を頼もう',h:'「201号室の〜です。エアコンが[壊れてしまったんですが]、[修理していただけないでしょうか]」'},
+ {w:'大家さん',s:'隣の部屋の音がうるさくて、夜眠れません。',l:'どうしましたか。',t:'困っていることを、ていねいに伝えよう',h:'「実は、隣の部屋の音が少し[気になっていまして]…」'},
+ {w:'大家さん',s:'来月、引っ越すことにしました。',l:'はい、何でしょう。',t:'引っ越すことを伝えて、手続きを聞こう',h:'「来月末に[引っ越すことになりまして]、手続きについて[伺いたいんですが]」'}]});
+const MORE_TALK={
+uni:[
+ ['あなたの国の教育について、説明してください。','「私の国では〜[が重視されていて]、〜[という特徴があります]」'],
+ ['日本語能力試験は、何級を持っていますか。','「N2を[持っております]。今はN1に向けて[勉強しております]」'],
+ ['尊敬する人はだれですか。','「私が尊敬する人は〜[です]。なぜなら、〜[からです]」'],
+ ['ほかの大学も受験していますか。','「はい、〜大学も[受験しております]が、こちらが[第一志望です]」']]
+ .map(([l,h])=>({s:'大学の面接で、面接官に質問されました。',l,t:'面接官の質問に答えよう',h})),
+arbeit:[
+ ['土日は働けますか。','「はい、土日は[大丈夫です]」'],
+ ['日本語で、電話の対応はできますか。','「はい、簡単な対応なら[できると思います]」'],
+ ['長く続けられますか。','「はい、少なくとも1年は[続けたいと思っております]」']]
+ .map(([l,h])=>({s:'アルバイトの面接で、店長に質問されました。',l,t:'店長の質問に答えよう',h})),
+shop:[
+ {s:'電気屋で、パソコンを見ています。色が気に入りません。',l:'何かご質問はございますか。',t:'ほかの色があるか聞こう',h:'「これの[ほかの色はありますか]」'},
+ {s:'ネットで注文した商品が、まだ届きません。お店に電話します。',l:'はい、さくらストアです。',t:'事情を説明して、確認してもらおう',h:'「先週注文した商品が[まだ届かないんですが]、[確認していただけますか]」'},
+ {s:'ほしいかばんが、少し高いです。',l:'こちらは3万円になります。',t:'もう少し安くならないか聞こう',h:'「もう少し[安くなりませんか]」'}],
+office:[
+ {s:'引っ越して、住所が変わりました。',l:'はい、どうしましたか。',t:'住所を変更したいと伝えよう',h:'「引っ越したので、住所の変更を[お願いしたいんですが]」'},
+ {s:'来週の試験の教室がわかりません。',l:'何か質問ですか。',t:'試験の教室を聞こう',h:'「来週の試験の教室を[教えていただけますか]」'},
+ {s:'証明書を申し込みました。いつ受け取れるか知りたいです。',l:'申し込みは受け付けました。',t:'いつ受け取れるか聞こう',h:'「ありがとうございます。いつごろ[受け取れますか]」'}],
+teacher:[
+ {s:'進路について、先生に相談したいです。',l:'どうしましたか。',t:'相談したいことがあると伝えよう',h:'「進路のことで、[ご相談したいことがあるんですが]」'},
+ {s:'先生の部屋のドアをノックしました。',l:'はい、どうぞ。',t:'あいさつして、今話してもいいか聞こう',h:'「[失礼します]。今、[よろしいでしょうか]」'},
+ {s:'今日は卒業式です。',l:'卒業おめでとう。',t:'お礼を言おう',h:'「ありがとうございます。今まで本当に[お世話になりました]」'}],
+friend:[
+ {s:'友達と、昼ご飯の相談をしています。',l:'お昼、何食べる？',t:'店を提案しよう',h:'「ラーメン[どう]？ 駅前においしい店が[あるんだ]」'},
+ {s:'今日は友達の誕生日です。',l:'あ、おはよう！',t:'お祝いを言って、プレゼントを渡そう',h:'「誕生日[おめでとう]！ これ、プレゼント。[よかったら使って]」'},
+ {s:'財布を家に忘れて、昼ご飯が買えません。',l:'どうしたの？',t:'事情を話して、お金を借りよう',h:'「財布[忘れちゃって]…500円[貸してくれない]？」'},
+ {s:'友達がテストで100点を取りました。',l:'見て！ 100点だった！',t:'ほめて、どうやって勉強したか聞こう',h:'「[すごいね]！ どうやって[勉強したの]？」'}],
+jp:[
+ {s:'日本人の大学生の友達と話しています。',l:'休みの日は何してるの？',t:'答えて、相手にも聞こう',h:'「だいたい〜[してるよ]。〜は[何してるの]？」'},
+ {s:'日本人の友達が、あなたの国の料理に興味を持っています。',l:'〜の料理で、おすすめある？',t:'おすすめを紹介して、一緒に食べに行こうと誘おう',h:'「〜が[おすすめだよ]。今度一緒に[食べに行こうよ]」'},
+ {s:'日本人の友達に、日本語をほめられました。',l:'日本語、上手だね！',t:'お礼を言って、謙遜しよう',h:'「[ありがとう]！ でも、まだまだ[だよ]」'}]};
+for(const k in MORE_TALK)TALKS[k].push(...MORE_TALK[k]);
+SORRY_ANY.push(
+ {who:'友達',reg:'カジュアル',s:'友達に借りたゲームを壊してしまった。',l:'この前貸したゲーム、どう？',t:'正直に話して、謝ろう',h:'「実は、[壊しちゃって]…本当に[ごめん]。新しいのを[買って返すね]」'},
+ {who:'店長',reg:'敬語',s:'寝坊して、アルバイトに遅刻してしまった。',l:'もう30分過ぎてるよ。',t:'謝って、理由を言おう',h:'「[申し訳ありません]。寝坊して[しまいました]。今後は[気をつけます]」'},
+ {who:'先生',reg:'敬語',s:'レポートの締め切りに間に合わなかった。',l:'レポートはどうしましたか。',t:'謝って、いつ出せるか伝えよう',h:'「[申し訳ありません]。明日までに[提出させていただけないでしょうか]」'});
+/* ---------- conversation scenes for daily life in Japan ---------- */
+Object.assign(TALK_SCENES,{
+  cityhall:{n:'市役所・銀行・郵便局',who:'窓口の人',reg:'丁寧語'},
+  work:{n:'アルバイト先',who:'店長',reg:'敬語'},
+  neighbor:{n:'近所の人',who:'近所の人',reg:'丁寧語'},
+  seminar:{n:'大学の授業・ゼミ',who:'先生',reg:'丁寧語'}});
+Object.assign(TALKS,{
+cityhall:[
+ {w:'市役所の人',s:'日本に来たばかりです。市役所で、住所の登録をします。',l:'今日はどのようなご用件ですか。',t:'住所の登録をしたいと伝えよう',h:'「日本に来たばかりなので、住所の[登録をしたいんですが]」'},
+ {w:'市役所の人',s:'国民健康保険に入りたいです。',l:'はい、どうぞ。',t:'保険に入りたいと伝えて、必要なものを聞こう',h:'「国民健康保険に[入りたいんですが]、何が[必要ですか]」'},
+ {w:'銀行の人',s:'銀行で、口座を作りたいです。',l:'いらっしゃいませ。',t:'口座を作りたいと伝えよう',h:'「口座を[作りたいんですが]、どう[すればいいですか]」'},
+ {w:'郵便局の人',s:'国の家族に荷物を送りたいです。',l:'こちらでお預かりします。',t:'国に送りたいと伝えて、いちばん安い方法を聞こう',h:'「これを国に[送りたいんですが]、いちばん安い方法は[何ですか]」'},
+ {w:'郵便局の人',s:'家に不在票が入っていました。荷物を受け取りたいです。',l:'どうされましたか。',t:'不在票のことを話して、荷物を受け取りたいと言おう',h:'「不在票が[入っていたんですが]、荷物を[受け取りたいです]」'},
+ {w:'携帯ショップの店員',s:'スマホの契約をしたいです。安いプランがいいです。',l:'本日はどのようなご用件でしょうか。',t:'契約したいと伝えて、安いプランを聞こう',h:'「スマホを[契約したいんですが]、安いプランは[ありますか]」'}],
+work:[
+ {w:'店長',s:'来週の土曜日に大学の試験がありますが、シフトに入っています。',l:'どうしたの？',t:'事情を話して、休ませてもらえないか相談しよう',h:'「来週の土曜日、試験があるので、[お休みをいただけないでしょうか]」'},
+ {w:'先輩',s:'レジの使い方を、まだよく覚えていません。',l:'何かわからないことある？',t:'もう一度教えてほしいと頼もう',h:'「すみません、レジの使い方を、もう一度[教えていただけますか]」'},
+ {w:'店長',s:'仕事中に、お皿を割ってしまいました。',l:'今の音、何？',t:'すぐに報告して、謝ろう',h:'「すみません、お皿を[割ってしまいました]。すぐに[片付けます]」'},
+ {w:'お客様',s:'レストランでアルバイトをしています。お客様が来ました。',l:'2人なんですけど…',t:'あいさつして、席に案内しよう',h:'「[いらっしゃいませ]。2名様ですね。こちらへ[どうぞ]」'},
+ {w:'店長',s:'今日の仕事が終わりました。帰る前に、あいさつします。',l:'お疲れさま。',t:'帰りのあいさつをしよう',h:'「お先に[失礼します]。[お疲れさまでした]」'},
+ {w:'先輩',s:'来週の金曜日に用事ができました。先輩にシフトを代わってほしいです。',l:'どうしたの？',t:'理由を言って、シフトを代わってもらえないか頼もう',h:'「来週の金曜日、用事ができてしまって…シフトを[代わっていただけませんか]」'}],
+neighbor:[
+ {w:'隣の人',s:'アパートに引っ越してきました。隣の部屋の人にあいさつします。',l:'はい、どちら様ですか。',t:'自己紹介して、あいさつしよう',h:'「隣に[引っ越してきた]〜です。よろしく[お願いします]」'},
+ {w:'近所の人',s:'ゴミを出す日を、まちがえてしまったようです。',l:'すみません、今日は燃えるゴミの日じゃないですよ。',t:'謝って、正しい日を聞こう',h:'「あ、[すみません]。燃えるゴミは何曜日[でしょうか]」'},
+ {w:'隣の人',s:'夜、友達と部屋で話していたら、隣の人が来ました。',l:'ちょっと声が大きいんですけど…',t:'謝って、気をつけると言おう',h:'「[ご迷惑をおかけして]すみません。これから[気をつけます]」'},
+ {w:'大家さん',s:'今月の家賃の振り込みが、1日遅れてしまいそうです。',l:'はい、どうしましたか。',t:'事情を説明して、謝ろう',h:'「今月の家賃の振り込みが、1日[遅れてしまいそうなんですが]…[申し訳ありません]」'}],
+seminar:[
+ {w:'先生',s:'ゼミで、自分の意見を発表します。',l:'では、あなたの意見を聞かせてください。',t:'理由と一緒に、自分の意見を言おう',h:'「私は〜と[考えます]。なぜなら、〜[からです]」'},
+ {w:'クラスメート',s:'グループワークで、ほかの人の案に反対したいです。',l:'じゃあ、この案でいいよね？',t:'ていねいに、反対の意見を言おう',h:'「いい案だと思うんですが、〜という点が少し[気になります]」'},
+ {w:'先生',s:'先生の説明が速くて、わかりませんでした。',l:'何か質問はありますか。',t:'もう一度説明してもらえるか頼もう',h:'「すみません、今のところを、もう一度[説明していただけますか]」'},
+ {w:'クラスメート',s:'グループ発表の準備で、役割を決めています。',l:'だれが資料を作る？',t:'自分がやると申し出よう',h:'「よかったら、私が資料を[作りましょうか]」'},
+ {w:'先生',s:'ほかの学生の発表が終わりました。',l:'何か質問のある人はいますか。',t:'発表者に質問しよう',h:'「〜について、もう少し[詳しく教えていただけますか]」'}]});
+const ALL_TALK=Object.keys(TALK_SCENES);
+function drawTalk(scene){
+  const key='talk-'+scene;
+  if(!decks[key]||!decks[key].length)decks[key]=shuffle(TALKS[scene]);
+  return decks[key].pop();
+}
+// hint 1 hides the [bracketed] key expressions, hint 2 is the full model answer
+const hintBlank=h=>esc(h).replace(/\[(.+?)\]/g,(m,w)=>`<span class="hblank" style="width:${(w.length*.7+.6).toFixed(1)}em"></span>`);
+const hintFull=h=>esc(h).replace(/\[(.+?)\]/g,'<b class="hkey">$1</b>');
+function talkBody(item,who,reg){
+  return `<p class="tsit"><span class="regtag r-${REG_CLASS[reg]}">${reg}</span>${item.s}</p>
+    <div class="ivq"><span class="ivwho">${who}</span><p class="ivtext">「${item.l}」</p></div>
+    <p class="ttask">あなた：${item.t}</p>
+    <div class="thint"><button type="button" class="hbtn2" id="hint1Btn">ヒント1（空欄）</button><button type="button" class="hbtn2" id="hint2Btn" hidden>ヒント2（答えの例）</button></div>
+    <p class="ivhint hline" id="hint1Txt" hidden><span class="htag">ヒント1</span>${hintBlank(item.h)}</p>
+    <p class="ivhint hline" id="hint2Txt" hidden><span class="htag">ヒント2</span>${hintFull(item.h)}</p>
+    <div class="qtimer" id="qtimer" hidden><div class="tbar"><i></i></div><span class="tnum">0</span></div>`;
+}
+function judgeHTML(labels){
+  return `<div class="judge" id="judge"><span class="lab">${judgeWho()}</span>
+    <button type="button" class="jbtn j3" data-j="3">${labels[3]}</button><button type="button" class="jbtn j2" data-j="2">${labels[2]}</button><button type="button" class="jbtn j1" data-j="1">${labels[1]}</button></div>`;
+}
+function wireTalk(secs,onJudge){
+  S.q.hint=0;
+  const used=()=>{const j=$('judge');if(!j)return;let t=j.querySelector('.hused');if(!t){t=document.createElement('span');t.className='hused';j.appendChild(t);}t.textContent=`ヒント${S.q.hint}を使った`;};
+  $('hint1Btn').addEventListener('click',()=>{$('hint1Txt').hidden=false;$('hint1Btn').remove();$('hint2Btn').hidden=false;S.q.hint=1;used();sfx.card();});
+  $('hint2Btn').addEventListener('click',()=>{$('hint2Txt').hidden=false;$('hint1Txt').hidden=true;$('hint2Btn').remove();S.q.hint=2;used();sfx.card();});
+  armGate(()=>{if(secs)startAnswerTimer(()=>{sfx.bell();toast('時間です！ 先生、判定してください',true);},secs);document.querySelector('.jbtn').focus();});
+  document.querySelectorAll('.jbtn').forEach(b=>b.addEventListener('click',()=>{
+    if(S.q.judged)return;S.q.judged=true;stopAnswerTimer();$('judge').remove();onJudge(+b.dataset.j);
+  }));
+}
+function talk(tm,tile){
+  let scene=tile.iv||tile.scene;
+  if(scene==='any')scene=pickOne(S.talkScenes.length?S.talkScenes:ALL_TALK);
+  const sc=TALK_SCENES[scene],item=drawTalk(scene),who=item.w||sc.who,secs=S.qtime?Math.max(30,S.qtime):0;
+  const isIv=scene==='uni'||scene==='arbeit';
+  const title=tile.scene==='any'?`会話チャレンジ：${sc.n}`:tile.l;
+  S.q={talk:true,started:false};
+  openCard(`${head(tile,tm,isIv?KIND.iv:KIND.talk)}<h2 class="ttl">${title}</h2>
+    <p class="desc">先生が「${who}」の役をします。${S.teams.length===1?'あなたが':'チームの代表が'}、場面に合った日本語で返してください。${secs?`時間は${secs}秒です。`:''}</p>
+    <div class="gate" id="gate"><button type="button" class="gatebtn" id="gateBtn">${isIv?'面接':'会話'}スタート！</button><span class="gatehint">${sc.n}・<span class="regtag r-${REG_CLASS[sc.reg]}">${sc.reg}</span>・代表を決めたら押してね</span></div>
+    <div class="qbody" id="qbody" hidden>${talkBody(item,who,sc.reg)}${judgeHTML(isIv?['','△ がんばろう','○ まあまあ','◎ よくできた']:['','△ もう少し','○ 通じた','◎ ばっちり'])}</div><div id="after"></div>`,STAGES[tile.s].c);
+  wireTalk(secs,j=>{
+    let label,money=0,note='';
+    if(scene==='uni'){money=[0,0,3,6][j];label=['','不合格… 次はがんばろう','補欠で合格！','合格！ 奨学金ももらえた！'][j];}
+    else if(scene==='arbeit'){
+      money=[0,0,1,2][j];label=['','不採用… 次はがんばろう','採用！','すぐに採用！'][j];
+      const canSet=!tm.job||tm.job.arbeit;
+      if(j>=2&&canSet){tm.job=j===3?{n:'カフェのアルバイト',sal:2,arbeit:true}:{n:'皿洗いのアルバイト',sal:1,arbeit:true};note=`${tm.job.n}をすることになった。給料日に ${sign(tm.job.sal)}`;}
+      else if(j>=2)note='いまの仕事と両立することになった';
+    }else{money=[0,0,2,5][j];label=['','もう少し練習しよう','ちゃんと通じた！','自然な会話！ ばっちり！'][j];}
+    tm.money+=money;render();j>=2?sfx.ok():sfx.ng();
+    $('after').innerHTML=verdictHTML(j>=2?'ok':'ng',label,money,note)+`<p class="ivhint"><span class="htag">答えの例</span>${hintFull(item.h)}</p>`;foot($('after'));
+  });
+}
+// bad event: show the loss, then an apology/excuse can reduce it
+function sorryChallenge(tm,tile){
+  const item=SORRY[tile.l]||pickOne(SORRY_ANY),loss=tile.a,half=-Math.ceil(Math.abs(loss)/2),secs=S.qtime?Math.max(30,S.qtime):0;
+  S.q={talk:true,started:false};sfx.ng();
+  openCard(`${head(tile,tm,KIND.sorry)}<h2 class="ttl">${tile.l}</h2><p class="desc">${tile.d} このままだと <b style="color:var(--ng)">${sign(loss)}</b>。上手に謝ったり言い訳したりできたら、損が減ります。</p>
+    <div class="gate" id="gate"><button type="button" class="gatebtn" id="gateBtn">おわびスタート！</button><span class="gatehint">相手：${item.who}・<span class="regtag r-${REG_CLASS[item.reg]}">${item.reg}</span>・◎ 損なし／○ ${sign(half)}／△ ${sign(loss)}</span></div>
+    <div class="qbody" id="qbody" hidden>${talkBody(item,item.who,item.reg)}${judgeHTML(['','△ もう少し','○ まあまあ','◎ 許してもらえた'])}</div><div id="after"></div>`,STAGES[tile.s].c);
+  wireTalk(secs,j=>{
+    const d=[0,loss,half,0][j];tm.money+=d;render();j===3?sfx.ok():sfx.ng();
+    const label=['','許してもらえなかった…','少しだけ許してもらえた','許してもらえた！ 損はなし！'][j];
+    $('after').innerHTML=verdictHTML(j===3?'ok':'ng',label,d,'')+`<p class="ivhint"><span class="htag">答えの例</span>${hintFull(item.h)}</p>`;foot($('after'));
+  });
+}
+
+
+/* ---------- reading aloud (no furigana; readings are shown after the judgement) ---------- */
+// {漢字|かんじ} marks a reading; the plain view shows only the kanji
+const READ={
+marry:[
+ ['N3','{本日|ほんじつ}は、お{忙|いそが}しいところ、{私|わたし}たちの{結婚式|けっこんしき}にお{越|こ}しいただき、ありがとうございます。これからも{二人|ふたり}で{力|ちから}を{合|あ}わせて、{温|あたた}かい{家庭|かてい}を{作|つく}っていきます。'],
+ ['N2','{新郎|しんろう}とは{大学時代|だいがくじだい}からの{付|つ}き{合|あ}いですが、{困|こま}っている{人|ひと}を{見|み}ると{放|ほう}っておけない、{優|やさ}しい{性格|せいかく}です。お{二人|ふたり}の{末永|すえなが}い{幸|しあわ}せを、{心|こころ}からお{祈|いの}りしております。'],
+ ['N1','{僭越|せんえつ}ながら、{一言|ひとこと}お{祝|いわ}いの{言葉|ことば}を{申|もう}し{上|あ}げます。{円満|えんまん}な{家庭|かてい}を{築|きず}くには、{互|たが}いを{尊重|そんちょう}し、{感謝|かんしゃ}の{気持|きも}ちを{忘|わす}れないことが{肝要|かんよう}です。']],
+baby:[
+ ['N3','{先週|せんしゅう}、{元気|げんき}な{男|おとこ}の{子|こ}が{生|う}まれました。{体重|たいじゅう}は3200グラムです。{名前|なまえ}は{家族|かぞく}みんなで{相談|そうだん}して{決|き}めました。'],
+ ['N2','このたび、{第一子|だいいっし}となる{女|おんな}の{子|こ}を{無事|ぶじ}に{出産|しゅっさん}いたしました。{母子|ぼし}ともに{健康|けんこう}で、{毎日|まいにち}にぎやかに{過|す}ごしております。'],
+ ['N1','{皆様|みなさま}の{温|あたた}かいお{心遣|こころづか}いのおかげで、{無事|ぶじ}に{新|あら}たな{家族|かぞく}を{迎|むか}えることができました。{未熟|みじゅく}な{親|おや}ではございますが、{今後|こんご}ともよろしくお{願|ねが}い{申|もう}し{上|あ}げます。']],
+retire:[
+ ['N3','{長|なが}い{間|あいだ}、{本当|ほんとう}にお{世話|せわ}になりました。この{会社|かいしゃ}で{働|はたら}けたことを、{誇|ほこ}りに{思|おも}っています。'],
+ ['N2','{入社|にゅうしゃ}してから{四十年|よんじゅうねん}、{多|おお}くの{方々|かたがた}に{支|ささ}えられて、{今日|きょう}まで{勤|つと}めることができました。{皆様|みなさま}のご{健康|けんこう}とご{活躍|かつやく}をお{祈|いの}りしております。'],
+ ['N1','{在職中|ざいしょくちゅう}は{格別|かくべつ}のご{厚情|こうじょう}を{賜|たまわ}り、{心|こころ}より{御礼|おんれい}{申|もう}し{上|あ}げます。{今後|こんご}は{第二|だいに}の{人生|じんせい}を{有意義|ゆういぎ}に{過|す}ごしたいと{存|ぞん}じます。']],
+book:[
+ ['N3','この{本|ほん}は、{日本|にほん}に{留学|りゅうがく}した{学生|がくせい}の{毎日|まいにち}を{書|か}いた{物語|ものがたり}です。{楽|たの}しいことも{大変|たいへん}なことも、{正直|しょうじき}に{書|か}かれています。'],
+ ['N2','{発売|はつばい}からわずか{一|いっ}か{月|げつ}で{十万部|じゅうまんぶ}を{突破|とっぱ}した{話題|わだい}の{小説|しょうせつ}。{主人公|しゅじんこう}が{夢|ゆめ}に{向|む}かって{努力|どりょく}する{姿|すがた}に、{多|おお}くの{読者|どくしゃ}が{勇気|ゆうき}をもらっている。'],
+ ['N1','{緻密|ちみつ}な{構成|こうせい}と{繊細|せんさい}な{心理描写|しんりびょうしゃ}が{高|たか}く{評価|ひょうか}され、{今年|ことし}の{文学賞|ぶんがくしょう}の{最有力候補|さいゆうりょくこうほ}と{目|もく}されている。']],
+shop:[
+ ['N3','この{物件|ぶっけん}は、{駅|えき}から{歩|ある}いて5{分|ふん}の{便利|べんり}な{場所|ばしょ}にあります。{近|ちか}くにスーパーや{病院|びょういん}もあって、{生活|せいかつ}しやすいです。'],
+ ['N2','ご{契約|けいやく}の{際|さい}は、{身分証明書|みぶんしょうめいしょ}と{印鑑|いんかん}をご{持参|じさん}ください。なお、{契約後|けいやくご}のキャンセルには{手数料|てすうりょう}が{発生|はっせい}いたします。'],
+ ['N1','{本契約|ほんけいやく}に{定|さだ}めのない{事項|じこう}については、{双方|そうほう}{誠意|せいい}をもって{協議|きょうぎ}の{上|うえ}、{解決|かいけつ}するものとする。']],
+any:[
+ ['N3','{今年|ことし}の{夏|なつ}、{家族|かぞく}みんなで{北海道|ほっかいどう}へ{旅行|りょこう}に{行|い}きました。{景色|けしき}がとてもきれいで、{料理|りょうり}もおいしかったです。'],
+ ['N2','{地域|ちいき}の{清掃活動|せいそうかつどう}に{参加|さんか}したところ、{市|し}から{感謝状|かんしゃじょう}が{贈|おく}られました。'],
+ ['N1','{長年|ながねん}の{研究|けんきゅう}が{実|み}を{結|むす}び、{学会|がっかい}で{最優秀賞|さいゆうしゅうしょう}を{受賞|じゅしょう}するに{至|いた}った。']]};
+const READ_THEME={'子どもが生まれた':'baby','退職金が出た':'retire','本がベストセラーに':'book'};
+const plainText=t=>esc(t).replace(/\{(.+?)\|(.+?)\}/g,'$1');
+const rubyText=t=>esc(t).replace(/\{(.+?)\|(.+?)\}/g,'<ruby>$1<rt>$2</rt></ruby>');
+function drawRead(theme){
+  const pool=READ[theme].filter(x=>S.levels.includes(x[0]));
+  return pickOne(pool.length?pool:READ[theme]);
+}
+// shows a passage to read aloud; onJudge(j) gets 3/2/1 and must fill #after
+function readChallenge(tm,tile,title,desc,theme,payLabels,onJudge){
+  const [lv,text,fq]=drawRead(theme);
+  S.q={read:true,started:false};
+  openCard(`${head(tile,tm,KIND.read)}<h2 class="ttl">${title}</h2><p class="desc">${desc}</p>
+    <div class="gate" id="gate"><button type="button" class="gatebtn" id="gateBtn">音読スタート！</button><span class="gatehint">${lvTag(lv)}読みがなはありません・${payLabels}</span></div>
+    <div class="qbody" id="qbody" hidden><p class="readtxt" id="readTxt">${plainText(text)}</p>
+      <div class="judge" id="judge"><span class="lab">${judgeWho()}</span>
+        <button type="button" class="jbtn j3" data-j="3">◎ すらすら読めた</button><button type="button" class="jbtn j2" data-j="2">○ だいたい読めた</button><button type="button" class="jbtn j1" data-j="1">△ 読めなかった</button></div></div>
+    <div id="after"></div>`,STAGES[tile.s].c);
+  armGate(()=>{document.querySelector('.jbtn').focus();});
+  document.querySelectorAll('.jbtn').forEach(b=>b.addEventListener('click',()=>{
+    if(S.q.judged)return;S.q.judged=true;$('judge').remove();
+    $('readTxt').innerHTML=rubyText(text);$('readTxt').classList.add('ruby');
+    if(fq)$('readTxt').insertAdjacentHTML('afterend',`<p class="ivhint hline"><span class="htag">${READ_FQ[theme]||'質問'}</span>${esc(fq)}</p>`);
+    onJudge(+b.dataset.j);
+  }));
+}
+const judgeWho=()=>S.teams.length===1?'判定（自分で、または先生が）':'先生の判定';
+/* ---------- reading passages for international students (third item = question to ask after reading) ---------- */
+Object.assign(READ,{
+univ:[
+ ['N2','{近年|きんねん}、{日本|にほん}では{少子高齢化|しょうしこうれいか}が{進|すす}み、{働|はたら}き{手|て}が{不足|ふそく}している。そのため、{外国人|がいこくじん}の{労働者|ろうどうしゃ}を{受|う}け{入|い}れる{企業|きぎょう}が{増|ふ}えている。','この問題について、あなたはどう考えますか。'],
+ ['N2','スマートフォンの{普及|ふきゅう}により、{私|わたし}たちの{生活|せいかつ}は{便利|べんり}になった。{一方|いっぽう}で、{長時間|ちょうじかん}の{使用|しよう}による{健康|けんこう}への{影響|えいきょう}も{指摘|してき}されている。','あなたは一日にどのくらいスマートフォンを使いますか。'],
+ ['N1','{地球温暖化|ちきゅうおんだんか}を{防|ふせ}ぐためには、{一人|ひとり}ひとりが{日常生活|にちじょうせいかつ}の{中|なか}でできることから{取|と}り{組|く}む{必要|ひつよう}がある。{例|たと}えば、{公共交通機関|こうきょうこうつうきかん}を{利用|りよう}したり、{無駄|むだ}な{電気|でんき}を{消|け}したりすることである。','環境のために、あなたがしていることは何ですか。'],
+ ['N2','{大学|だいがく}は、{知識|ちしき}を{身|み}につけるだけの{場所|ばしょ}ではない。さまざまな{背景|はいけい}を{持|も}つ{人々|ひとびと}と{出会|であ}い、{自分|じぶん}の{考|かんが}えを{深|ふか}める{場所|ばしょ}でもある。','大学で、どんな人と出会いたいですか。'],
+ ['N1','{異文化|いぶんか}を{理解|りかい}するということは、{相手|あいて}の{文化|ぶんか}を{知|し}ることだけではない。{自分|じぶん}の{文化|ぶんか}を{客観的|きゃっかんてき}に{見直|みなお}すきっかけにもなるのである。','日本に来て、自分の国の文化について気づいたことはありますか。'],
+ ['N2','{読書|どくしょ}は、{語彙力|ごいりょく}や{想像力|そうぞうりょく}を{育|そだ}てるだけでなく、{他人|たにん}の{気持|きも}ちを{理解|りかい}する{力|ちから}も{養|やしな}うと{言|い}われている。','最近読んだ本について教えてください。'],
+ ['N1','{人工知能|じんこうちのう}の{発達|はったつ}によって、{将来|しょうらい}なくなる{仕事|しごと}があるとも{言|い}われている。しかし、{人間|にんげん}にしかできない{創造的|そうぞうてき}な{仕事|しごと}は、むしろ{重要性|じゅうようせい}を{増|ま}していくだろう。','AIについて、あなたの意見を聞かせてください。'],
+ ['N3','{私|わたし}の{夢|ゆめ}は、{日本|にほん}と{自分|じぶん}の{国|くに}をつなぐ{仕事|しごと}をすることです。そのために、{大学|だいがく}で{経済|けいざい}と{日本語|にほんご}をしっかり{勉強|べんきょう}したいと{思|おも}っています。','その夢を持ったきっかけは何ですか。'],
+ ['N2','{日本|にほん}では、まだ{食|た}べられるのに{捨|す}てられる{食品|しょくひん}が、{年間|ねんかん}{数百万|すうひゃくまん}トンにのぼると{言|い}われている。{必要|ひつよう}な{分|ぶん}だけ{買|か}うことが{大切|たいせつ}だ。','食品ロスを減らすために、何ができると思いますか。'],
+ ['N1','グローバル{化|か}が{進|すす}む{現代社会|げんだいしゃかい}において、{外国語|がいこくご}の{能力|のうりょく}は{欠|か}かせないものとなっている。だが、{言葉|ことば}を{話|はな}せることと、{相手|あいて}と{分|わ}かり{合|あ}えることは、{必|かなら}ずしも{同|おな}じではない。','外国語を学ぶとき、大切なことは何だと思いますか。'],
+ ['N2','{日本|にほん}の{大学生|だいがくせい}の{多|おお}くは、{授業|じゅぎょう}のほかにサークル{活動|かつどう}やアルバイトをしている。{時間|じかん}をうまく{使|つか}うことが、{充実|じゅうじつ}した{大学生活|だいがくせいかつ}を{送|おく}るための{鍵|かぎ}だ。','あなたは時間をどのように使っていますか。'],
+ ['N3','{日本|にほん}に{来|き}たばかりのころは、{電車|でんしゃ}の{乗|の}り{方|かた}もわかりませんでした。でも、{周|まわ}りの{人|ひと}が{親切|しんせつ}に{教|おし}えてくれたので、{今|いま}では{一人|ひとり}でどこへでも{行|い}けます。','日本に来て、助けてもらった経験はありますか。'],
+ ['N2','{災害|さいがい}の{多|おお}い{日本|にほん}では、{日頃|ひごろ}から{防災|ぼうさい}の{意識|いしき}を{持|も}つことが{重要|じゅうよう}である。{避難場所|ひなんばしょ}を{確認|かくにん}し、{水|みず}や{食料|しょくりょう}を{備|そな}えておく{必要|ひつよう}がある。','あなたの国では、どんな災害がありますか。'],
+ ['N1','{幸福|こうふく}とは{何|なに}か。この{問|と}いに{唯一|ゆいいつ}の{答|こた}えはない。{物質的|ぶっしつてき}な{豊|ゆた}かさを{求|もと}める{人|ひと}もいれば、{人|ひと}とのつながりに{価値|かち}を{見出|みいだ}す{人|ひと}もいる。','あなたにとって、幸福とは何ですか。'],
+ ['N2','ボランティア{活動|かつどう}に{参加|さんか}すると、{社会|しゃかい}の{役|やく}に{立|た}つだけでなく、{自分自身|じぶんじしん}も{多|おお}くのことを{学|まな}ぶことができる。','ボランティアをしたことはありますか。'],
+ ['N3','{私|わたし}が{日本語|にほんご}の{勉強|べんきょう}を{始|はじ}めたのは、{日本|にほん}のアニメが{好|す}きだったからです。{今|いま}では、{日本|にほん}の{歴史|れきし}や{文化|ぶんか}にも{興味|きょうみ}を{持|も}っています。','日本の文化で、特に興味があるものは何ですか。'],
+ ['N2','{高齢者|こうれいしゃ}の{一人暮|ひとりぐ}らしが{増|ふ}える{中|なか}、{地域|ちいき}の{人々|ひとびと}が{互|たが}いに{助|たす}け{合|あ}う{仕組|しく}みづくりが{求|もと}められている。','あなたの国では、お年寄りはどのように暮らしていますか。'],
+ ['N1','{情報|じょうほう}があふれる{現代|げんだい}では、{得|え}た{情報|じょうほう}をそのまま{信|しん}じるのではなく、その{真偽|しんぎ}を{自分|じぶん}で{確|たし}かめる{姿勢|しせい}が{求|もと}められる。','ニュースや情報を、どのように確かめていますか。']],
+life:[
+ ['N3','{燃|も}えるゴミは、{毎週|まいしゅう}{月曜日|げつようび}と{木曜日|もくようび}の{朝|あさ}8{時|じ}までに{出|だ}してください。{前|まえ}の{日|ひ}の{夜|よる}には{出|だ}さないでください。','燃えるゴミは、何曜日の何時までに出しますか。'],
+ ['N3','{図書館|としょかん}の{本|ほん}は、{一人|ひとり}5{冊|さつ}まで、2{週間|しゅうかん}{借|か}りることができます。{返|かえ}すのが{遅|おく}れると、しばらく{借|か}りられなくなります。','本は何冊まで、何週間借りられますか。'],
+ ['N2','{引|ひ}っ{越|こ}しをした{場合|ばあい}は、14{日|にち}{以内|いない}に{市役所|しやくしょ}で{住所|じゅうしょ}の{変更|へんこう}を{届|とど}け{出|で}てください。{在留|ざいりゅう}カードを{必|かなら}ずお{持|も}ちください。','引っ越したら、いつまでに何をしなければなりませんか。'],
+ ['N2','この{薬|くすり}は{一日|いちにち}3{回|かい}、{食後|しょくご}に{飲|の}んでください。{眠|ねむ}くなることがありますので、{飲|の}んだあとの{車|くるま}の{運転|うんてん}は{避|さ}けてください。','この薬を飲んだあと、何をしてはいけませんか。'],
+ ['N2','{奨学金|しょうがくきん}の{申請|しんせい}を{希望|きぼう}する{学生|がくせい}は、{今月末|こんげつまつ}までに{学生課|がくせいか}に{書類|しょるい}を{提出|ていしゅつ}すること。{締|し}め{切|き}り{後|ご}の{提出|ていしゅつ}は{受|う}け{付|つ}けない。','書類はいつまでに、どこに出しますか。'],
+ ['N3','ただいま、{信号|しんごう}の{故障|こしょう}のため、{電車|でんしゃ}が{遅|おく}れております。お{急|いそ}ぎのところ、ご{迷惑|めいわく}をおかけして{申|もう}し{訳|わけ}ございません。','電車はなぜ遅れていますか。'],
+ ['N2','{当|とう}マンションでは、ペットを{飼|か}うことを{禁止|きんし}しております。また、{夜|よる}10{時|じ}{以降|いこう}は、{大|おお}きな{音|おと}を{立|た}てないようご{協力|きょうりょく}をお{願|ねが}いいたします。','このマンションで、してはいけないことは何ですか。'],
+ ['N2','{履修登録|りしゅうとうろく}は、4{月|がつ}10{日|か}までにオンラインで{行|おこな}ってください。{登録|とうろく}しなかった{科目|かもく}は、{単位|たんい}が{認|みと}められません。','履修登録をしないと、どうなりますか。'],
+ ['N3','アルバイト{募集|ぼしゅう}！ {週|しゅう}2{日|か}から{働|はたら}けます。{時給|じきゅう}は1200{円|えん}で、{交通費|こうつうひ}も{出|で}ます。{日本語|にほんご}で{簡単|かんたん}な{会話|かいわ}ができる{方|かた}を{待|ま}っています。','時給はいくらですか。どんな人を探していますか。'],
+ ['N2','{大|おお}きな{地震|じしん}が{起|お}きたら、まず{机|つくえ}の{下|した}に{入|はい}って{頭|あたま}を{守|まも}ってください。{揺|ゆ}れがおさまってから、{火|ひ}を{消|け}して、{落|お}ち{着|つ}いて{避難|ひなん}しましょう。','地震が起きたら、まず何をしますか。'],
+ ['N1','{国民健康保険|こくみんけんこうほけん}に{加入|かにゅう}すると、{病院|びょういん}での{医療費|いりょうひ}の{自己負担|じこふたん}は{原則|げんそく}3{割|わり}になります。{保険料|ほけんりょう}は{前年|ぜんねん}の{所得|しょとく}に{応|おう}じて{決|き}められます。','保険に入ると、医療費は何割払いますか。'],
+ ['N2','{銀行|ぎんこう}で{口座|こうざ}を{作|つく}る{際|さい}には、{在留|ざいりゅう}カードと{印鑑|いんかん}が{必要|ひつよう}です。{日本|にほん}に{来|き}てすぐの{方|かた}は、{口座|こうざ}を{作|つく}れない{場合|ばあい}があります。','口座を作るとき、何が必要ですか。'],
+ ['N3','{明日|あした}の3{限|げん}の{授業|じゅぎょう}は、{先生|せんせい}の{都合|つごう}により{休講|きゅうこう}となります。{補講|ほこう}の{日程|にってい}は、{後日|ごじつ}お{知|し}らせします。','明日の3限の授業はどうなりますか。'],
+ ['N1','{本契約|ほんけいやく}を{解約|かいやく}する{場合|ばあい}は、{解約日|かいやくび}の1か{月前|げつまえ}までに{書面|しょめん}にて{通知|つうち}するものとする。{通知|つうち}がない{場合|ばあい}、{契約|けいやく}は{自動的|じどうてき}に{更新|こうしん}される。','解約したいとき、いつまでに何をしなければなりませんか。'],
+ ['N2','ペットボトルは、キャップとラベルを{外|はず}し、{中|なか}を{軽|かる}く{洗|あら}ってから{出|だ}してください。キャップは{資源|しげん}ゴミとして{別|べつ}に{出|だ}してください。','ペットボトルを出す前に、何をしますか。'],
+ ['N3','{駅前|えきまえ}に{自転車|じてんしゃ}を{止|と}めないでください。{止|と}めてある{自転車|じてんしゃ}は、{市|し}が{運|はこ}んでいきます。','駅前に自転車を止めると、どうなりますか。'],
+ ['N2','{在留|ざいりゅう}カードは、いつも{持|も}ち{歩|ある}かなければなりません。なくした{場合|ばあい}は、14{日|にち}{以内|いない}に{再交付|さいこうふ}を{申請|しんせい}してください。','在留カードをなくしたら、どうしますか。'],
+ ['N3','{健康診断|けんこうしんだん}の{日|ひ}は、{朝|あさ}ごはんを{食|た}べないで{来|き}てください。{水|みず}は{少|すこ}しなら{飲|の}んでもかまいません。','健康診断の日の朝、何をしてはいけませんか。']]});
+const READ_TILE_THEMES=['univ','life'];
+const READ_NAME={univ:'大学の面接',life:'留学生の生活'};
+const READ_DESC={univ:'大学の面接では、文章を声に出して読ませることがあります。読みがななしで読んでみよう。',life:'日本の生活で目にするお知らせや案内です。読みがななしで読んでみよう。'};
+const READ_FQ={univ:'面接官の質問',life:'内容の質問'};
+function readTile(tm,tile){
+  const theme=pickOne(S.readThemes&&S.readThemes.length?S.readThemes:READ_TILE_THEMES),pay=[0,0,2,5];
+  readChallenge(tm,tile,`音読チャレンジ：${READ_NAME[theme]}`,READ_DESC[theme],theme,`◎ ${sign(pay[3])}／○ ${sign(pay[2])}／△ なし`,
+    j=>{tm.money+=pay[j];render();j>=2?sfx.ok():sfx.ng();
+      $('after').innerHTML=verdictHTML(j>=2?'ok':'ng',['','もう少し練習しよう','よく読めた！','すらすら読めた！'][j],pay[j],'');foot($('after'));});
+}
+
+
+/* ---------- bets, steal, help cards ---------- */
+const BET=2;
+function betHTML(tm){
+  if(!S.opts.bet)return '';
+  const others=S.teams.filter(t=>t!==tm);if(!others.length)return '';
+  return `<div class="bets" id="bets"><p class="betttl">予想ベット：ほかのチームは予想しよう（当たり +${amt(BET)}／はずれ −${amt(BET)}）</p>
+    ${others.map(t=>{const i=S.teams.indexOf(t);return `<div class="betrow"><span class="bn"><span class="dot" style="--tc:${t.color}"></span>${esc(t.name)}</span>
+      <button type="button" class="bbtn o" data-i="${i}" data-v="o" aria-pressed="false">○ 正解する</button><button type="button" class="bbtn x" data-i="${i}" data-v="x" aria-pressed="false">× まちがえる</button></div>`}).join('')}</div>`;
+}
+function wireBets(){
+  document.querySelectorAll('.bbtn').forEach(b=>b.addEventListener('click',()=>{
+    if(S.q.started)return;const i=+b.dataset.i,v=b.dataset.v;
+    S.q.bets[i]=S.q.bets[i]===v?null:v;
+    document.querySelectorAll(`.bbtn[data-i="${i}"]`).forEach(x=>x.setAttribute('aria-pressed',S.q.bets[x.dataset.i]===x.dataset.v));
+  }));
+}
+function betSummary(){
+  const o=[],x=[];Object.entries(S.q.bets).forEach(([i,v])=>{if(v==='o')o.push(S.teams[i].name);else if(v==='x')x.push(S.teams[i].name);});
+  if(!o.length&&!x.length)return '';
+  return `<p class="betsum">予想　${o.length?`<span class="bo">○ ${o.map(esc).join('・')}</span>`:''}${x.length?`<span class="bx">× ${x.map(esc).join('・')}</span>`:''}</p>`;
+}
+function settleBets(ok){
+  const win=[],lose=[];
+  Object.entries(S.q.bets||{}).forEach(([i,v])=>{if(!v)return;const t=S.teams[i];
+    if((v==='o')===ok){t.money+=BET;win.push(t.name);}else{t.money-=BET;lose.push(t.name);}});
+  if(!win.length&&!lose.length)return '';
+  return `<p class="betres">予想${win.length?`　<span class="bo">的中 ${win.map(esc).join('・')} +${amt(BET)}</span>`:''}${lose.length?`　<span class="bx">はずれ ${lose.map(esc).join('・')} −${amt(BET)}</span>`:''}</p>`;
+}
+function helpHTML(tm){
+  const h=tm.helps;if(!S.opts.half&&!S.opts.ask)return '';
+  return `<div class="helps" id="helps"><span class="lab">助っ人カード（1回ずつ）</span>
+    ${S.opts.half?`<button type="button" class="hbtn" data-h="half"${h.half?'':' disabled'}>50:50</button>`:''}
+    ${S.opts.ask?`<button type="button" class="hbtn" data-h="ask"${h.ask?'':' disabled'}>友だちに聞く${S.qtime?'（+15秒）':''}</button>`:''}</div>`;
+}
+const helpsLeft=tm=>(S.opts.half&&tm.helps.half?1:0)+(S.opts.ask&&tm.helps.ask?1:0);
+function wireHelps(tm){
+  document.querySelectorAll('.hbtn').forEach(b=>b.addEventListener('click',()=>{
+    if(!S.q||S.q.done||b.disabled)return;
+    if(b.dataset.h==='half'){
+      const wrong=shuffle([...document.querySelectorAll('.opt')].filter(o=>o.dataset.v!==S.q.correct&&!o.disabled)).slice(0,2);
+      wrong.forEach(o=>{o.disabled=true;o.classList.add('gone');});tm.helps.half=false;sfx.card();toast('50:50！ 選択肢を2つ消しました',true);
+    }else{
+      tm.helps.ask=false;extendAnswerTimer(15);sfx.card();toast('ほかのチームの1人に聞いてOK！',true,S.qtime?'時間 +15秒':'');
+    }
+    b.disabled=true;render();
+  }));
+}
+function lockHelps(){document.querySelectorAll('.hbtn').forEach(b=>b.disabled=true);}
+// steal: another team raises a hand and answers the remaining options once
+function stealPhase(tm,stealWin,html,then){
+  const cands=S.teams.filter(t=>t!==tm);
+  $('after').innerHTML=html+`<div class="steal" id="steal"><span class="stealttl">横取りチャンス！</span>
+    <span class="lab">わかるチームは手を挙げて！ 正解 <b style="color:var(--ok)">+${amt(stealWin)}</b>／まちがい <b style="color:var(--ng)">−${amt(1)}</b></span>
+    <div class="pick" id="spick">${cands.map(t=>`<button class="tbtn" type="button" style="--tc:${t.color}" data-i="${S.teams.indexOf(t)}" aria-pressed="false"><span class="dot" style="--tc:${t.color}"></span>${esc(t.name)}</button>`).join('')}<button class="tbtn none" type="button" id="noSteal">だれも手を挙げない</button></div></div><div id="after2"></div>`;
+  S.q.stealer=null;
+  document.querySelectorAll('.opt.gone').forEach(o=>o.classList.remove('gone'));
+  try{$('steal').scrollIntoView({block:'nearest',behavior:reduce?'auto':'smooth'});}catch(e){}
+  const resolve=(ok,btn)=>{
+    if(S.q.stealDone)return;S.q.stealDone=true;
+    const t=S.q.stealer;let res='';
+    if(t){
+      if(!ok&&btn)btn.classList.add('wrong');
+      t.money+=ok?stealWin:-1;
+      if(!ok)recordMiss(S.q,[t.name]);
+      res=verdictHTML(ok?'ok':'ng',ok?`${esc(t.name)} 横取り成功！`:`${esc(t.name)} 横取り失敗…`,ok?stealWin:-1,'');
+      ok?sfx.ok():sfx.ng();
+    }
+    reveal();render();
+    $('steal').remove();
+    $('after2').innerHTML=res+(S.q.ex?`<p class="desc">${esc(S.q.ex)}</p>`:'');
+    then();
+  };
+  document.querySelectorAll('#spick .tbtn[data-i]').forEach(b=>b.addEventListener('click',()=>{
+    if(S.q.stealDone)return;S.q.stealer=S.teams[+b.dataset.i];
+    document.querySelectorAll('#spick .tbtn[data-i]').forEach(x=>x.setAttribute('aria-pressed',x===b));
+    document.querySelectorAll('.opt').forEach(o=>{if(!o.classList.contains('wrong'))o.disabled=false;});
+    const o=document.querySelector('.opt:not([disabled])');if(o)o.focus();
+  }));
+  $('noSteal').addEventListener('click',()=>{S.q.stealer=null;resolve(false);});
+  S.q.handler=b=>{if(!S.q.stealer||S.q.stealDone)return;resolve(b.dataset.v===S.q.correct,b);};
+}
+
+/* ---------- 貧乏神 (poverty god): appears mid-game, haunts the richest team, can be passed on ---------- */
+const newBomb=on=>({on,team:-1,turns:0,king:false,appeared:false});
+function bombSVG(king){
+  const D='#1b2233',body=king?'#5b3a80':'#a59cc0';
+  const crown=king?`<path d="M36 28 L42 6 L52 19 L60 2 L68 19 L78 6 L84 28 Z" fill="#f2c230" stroke="${D}" stroke-width="3.5" stroke-linejoin="round"/>`:'';
+  const brows=king?`<path d="M33 50 L52 59 M87 50 L68 59" stroke="${D}" stroke-width="5" stroke-linecap="round" fill="none"/>`
+                  :`<path d="M34 55 L50 50 M86 55 L70 50" stroke="${D}" stroke-width="4" stroke-linecap="round" fill="none"/>`;
+  const eyes=`<ellipse cx="44" cy="67" rx="6" ry="${king?5:7}" fill="${D}"/><ellipse cx="76" cy="67" rx="6" ry="${king?5:7}" fill="${D}"/><circle cx="46" cy="64" r="2" fill="#ffffff"/><circle cx="78" cy="64" r="2" fill="#ffffff"/>`;
+  const mouth=king?`<path d="M44 92 Q60 80 76 92" stroke="${D}" stroke-width="5" fill="none" stroke-linecap="round"/><path d="M50 88 L53 95 L56 86 Z M64 86 L67 95 L70 88 Z" fill="#ffffff" stroke="${D}" stroke-width="1.5"/>`
+                  :`<path d="M46 92 q5 -6 10 0 q5 6 10 0 q5 -6 10 0" stroke="${D}" stroke-width="4" fill="none" stroke-linecap="round"/>`;
+  const extra=king?'':`<rect x="78" y="96" width="14" height="12" rx="2" fill="#d9c27a" stroke="${D}" stroke-width="2.5" transform="rotate(12 85 102)"/><path d="M93 38 q6 9 0 13 q-6 -4 0 -13z" fill="#7cc4f0" stroke="${D}" stroke-width="2"/>`;
+  return `<svg viewBox="0 0 120 124" aria-hidden="true">${crown}<path d="M60 24 C30 24 18 48 18 74 L18 116 L30 106 L42 118 L54 106 L66 118 L78 106 L90 118 L102 106 L102 74 C102 48 90 24 60 24 Z" fill="${body}" stroke="${D}" stroke-width="4" stroke-linejoin="round"/>${brows}${eyes}${mouth}${extra}</svg>`;
+}
+const bombName=()=>S.bomb.king?'大貧乏神':'貧乏神';
+function richest(exclude){
+  const c=S.teams.filter(t=>!t.done&&t!==exclude);
+  if(!c.length)return null;
+  return c.sort((a,b)=>assets(b)-assets(a)||b.pos-a.pos)[0];
+}
+function transferBomb(to,why){
+  const B=S.bomb;B.team=S.teams.indexOf(to);if(!B.king)B.turns=0;render();sfx.card();
+  toast(`${bombName()}が${to.name}にうつった！`,false,why);
+}
+// called on every step of a move: the haunted team passes it to anyone it walks past or lands on
+function bombPass(tm){
+  const B=S.bomb;if(!B.on||B.team<0||S.bombMoved||S.teams[B.team]!==tm)return;
+  const others=S.teams.filter(t=>t!==tm&&!t.done&&t.pos===tm.pos);
+  if(!others.length)return;
+  S.bombMoved=true;transferBomb(pickOne(others),`${tm.name}がすれちがいざまに押しつけた`);
+}
+function bombCard(tm,inner,evolved){
+  openCard(`<div class="head"><span class="kind" style="--kc:var(--k-bomb)">${bombName()}</span><span class="who"><span class="dot" style="--tc:${tm.color}"></span>${esc(tm.name)}</span></div>
+    <div class="bcard"><div class="bpic">${bombSVG(S.bomb.king)}</div><div class="btext">${evolved?'<span class="evolve">貧乏神が大貧乏神に変身した！</span>':''}${inner}</div></div><div id="after"></div>`,'var(--k-bomb)');
+  foot($('after'));
+}
+// returns true when it showed a card (the card's button calls next() again)
+function bombStep(){
+  const B=S.bomb;if(!B||!B.on||S.bombDone)return false;
+  if(!B.appeared){
+    const far=Math.max(...S.teams.map(t=>t.pos));
+    if(far<Math.floor(LAST/3))return false;
+    const to=richest();if(!to)return false;
+    B.appeared=true;B.team=S.teams.indexOf(to);B.turns=0;B.king=false;S.bombDone=true;render();sfx.ng();
+    bombCard(to,`<h2 class="ttl">貧乏神があらわれた！</h2><p class="desc">いちばんお金持ちの <b>${esc(to.name)}</b> にとりついた！ このチームの番が終わるたびに、いたずらをします。ほかのチームのいるマスを通ると、そのチームにうつせます。</p>`);
+    return true;
+  }
+  if(B.team<0||B.team!==S.turn||S.again)return false;
+  S.bombDone=true;bombMischief(S.teams[B.team]);return true;
+}
+function bombMischief(tm){
+  const B=S.bomb;B.turns++;let evolved=false;
+  if(!B.king&&B.turns>=3){B.king=true;evolved=true;}
+  const others=S.teams.filter(t=>t!==tm&&!t.done);
+  let title,desc,delta=0;
+  const act=pickOne(B.king?['bigtake','bigtake','steal','half','nap']:['take','take','sell','give','nap']);
+  const cheapest=()=>[...tm.props].sort((a,b)=>PROP[a].p-PROP[b].p)[0];
+  const priciest=()=>[...tm.props].sort((a,b)=>PROP[b].p-PROP[a].p)[0];
+  switch(tm.props.length||!['sell','steal'].includes(act)?act:(B.king?'bigtake':'take')){
+    case 'take':{const a=2+rnd(3);tm.money-=a;delta=-a;title='お金を捨てられた！';desc=`財布から${amt(a)}円を川に投げ捨てた…`;break;}
+    case 'sell':{const id=cheapest(),p=PROP[id],back=Math.floor(p.p/2);tm.props.splice(tm.props.indexOf(id),1);tm.money+=back;delta=back-p.p;
+      title=`${p.n}を売られた！`;desc=`勝手に半額（${yen(back)}）で売ってしまった…`;break;}
+    case 'give':{const k=others.length;tm.money-=k;others.forEach(t=>t.money+=1);delta=-k;title='お金をばらまかれた！';desc=`ほかのチームに${amt(1)}円ずつ配ってしまった…`;break;}
+    case 'nap':{title='今日は昼寝中…';desc='いびきをかいて寝ている。今回は何もしない。';break;}
+    case 'bigtake':{const a=8+rnd(5);tm.money-=a;delta=-a;title='大金を使いこまれた！';desc=`高級レストランで${amt(a)}円も使ってしまった！`;break;}
+    case 'steal':{const id=priciest(),p=PROP[id];tm.props.splice(tm.props.indexOf(id),1);delta=-p.p;title=`${p.n}を取られた！`;desc='いちばん高い物件を持っていかれた…';break;}
+    case 'half':{
+      if(tm.money>0){const a=Math.ceil(tm.money/2);tm.money-=a;delta=-a;title='所持金が半分に！';desc='お金を半分も持っていかれた！';}
+      else{tm.money-=6;delta=-6;title='借金がふえた！';desc=`勝手に${amt(6)}円も借金してきた…`;}
+      break;}
+  }
+  render();delta<0?sfx.ng():sfx.tick();
+  bombCard(tm,`<h2 class="ttl">${title}</h2><p class="desc">${desc}</p>${delta?`<div class="money minus">${sign(delta)}</div>`:''}<p class="hint">いたずら${B.turns}回目${B.king?'':'（3回目で大貧乏神に変身）'}</p>`,evolved);
+}
+
+/* ---------- rules explanation (Japanese / Chinese) ---------- */
+const RULE_MODES={both:'日本語＋中文',ja:'日本語',zh:'中文'};
+let ruleMode='both', ruleIdx=0, rulesBack=null;
+try{const m=localStorage.getItem('n2life-rulelang');if(RULE_MODES[m])ruleMode=m;}catch(e){}
+const bi=(ja,zh)=>`<span class="ja">${ja}</span><span class="zh" lang="zh-CN">${zh}</span>`;
+function rulePages(){
+  const qt=S.qtime;
+  const bonus=GOAL_BONUS.slice(0,S.teams.length);
+  return [
+  {t:['ゲームの目的','游戏目标'],body:`
+    <div class="ritem">${bi('チームで協力して、スタートからゴールまで「人生」を進みます。','各小组合作，从起点到终点走完“人生”。')}</div>
+    <div class="ritem">${bi('最後に「総資産」がいちばん多いチームの勝ちです！','最后“总资产”最多的小组获胜！')}</div>
+    <div class="rbox">${bi('総資産 ＝ 持っているお金 ＋ 物件の値段','总资产 ＝ 手里的钱 ＋ 房产的价格')}</div>`},
+  {t:['進み方','怎么前进'],body:[
+    ['ルーレットを回します。「ストップ！」を押すと止まります。押さなくても、自動で止まります。','转动轮盘，按“停止！”就会停下。不按也会自动停下。'],
+    ['出た数だけ、コマが進みます。','棋子按转出的数字前进。'],
+    ['止まったマスで、問題やイベントがあります。','在停下的格子里，会出题目或发生事件。'],
+    ['次のチームの番になります。','轮到下一个小组。']]
+    .map((x,i)=>`<div class="ritem step"><span class="rnum">${i+1}</span><div>${bi(x[0],x[1])}</div></div>`).join('')},
+  {t:['問題マス','答题格'],body:`
+    <div class="ritem">${bi('文法・語彙・並べ替えの4択問題が出ます。','会出语法、词汇、排序的四选一题目。')}</div>
+    <div class="ritem">${bi('N3・N2・N1からレベルを選べます。むずかしいほど、正解でもらえるお金も、まちがいで減るお金も大きくなります。','可以从N3、N2、N1中选择难度。越难，答对得到的钱越多，答错扣的钱也越多。')}
+      <div class="rlv">${LEVELS.map(lv=>`<span>${lvTag(lv)} ×${LV[lv].m}</span>`).join('')}</div></div>
+    <div class="ritem">${qt?bi(`「問題スタート！」を押すと問題が出ます。答える時間は${qt}秒です。早く正解するほど、スピードボーナスがもらえます。チームで相談してもいいです。`,`按“开始答题！”后出现题目。答题时间为${qt}秒。越快答对，速度奖励越多。可以和组员商量。`):bi('「問題スタート！」を押すと問題が出ます。答える時間の制限はありません。チームで相談してもいいです。','按“开始答题！”后出现题目。答题没有时间限制。可以和组员商量。')}</div>
+    <div class="ritem">${bi('まちがえた問題は、最後にみんなで復習します。','答错的题目，最后大家一起复习。')}</div>`},
+  {t:['いろいろなマス','各种格子'],cls:'cols',body:[
+    ['var(--k-stop)','止まれ','必停格','必ず止まります。「就職活動」で問題に正解すると、給料の高い仕事につけます。','一定要停下。在“就业”格答对题目，就能找到高薪工作。'],
+    ['var(--k-pay)','給料日','发薪日','通るだけで、給料と物件の収入がもらえます。','只要经过，就能领到工资和房产收入。'],
+    ['var(--k-shop)','物件','房产','お金を払って、お店や家を買えます。給料日にお金が入ります。','可以花钱买店铺或房子，发薪日会有收入。'],
+    ['var(--k-battle)','早押し対決','抢答','全チームで答えます。先に手を挙げたチームが答えられます。','所有小组一起抢答，先举手的小组回答。'],
+    ['var(--k-risk)','勝負する？','挑战',`安全に${amt(2)}円もらうか、問題に挑戦するかを選びます。`,`选择安全地拿${amt(2)}日元，或者挑战题目。`],
+    ['var(--k-chance)','チャンス','机会','カードをめくります。何が起きるかはお楽しみ！','翻一张卡片，会发生什么就看运气了！']]
+    .map(([c,kj,kz,tj,tz])=>`<div class="ritem rkind"><span class="rk" style="--kc:${c}">${bi(kj,kz)}</span><div>${bi(tj,tz)}</div></div>`).join('')},
+  {t:['進む・戻る・貧乏神','前进、后退、穷神'],body:`
+    <div class="rbody cols">
+      <div class="ritem rkind"><span class="rk" style="--kc:var(--k-fwd)">${bi('2マス進む','前进2格')}</span><div>${bi('止まると、さらに2マス進みます。','停在这里，就再前进2格。')}</div></div>
+      <div class="ritem rkind"><span class="rk" style="--kc:var(--k-back)">${bi('3マス戻る','后退3格')}</span><div>${bi('止まると、3マス戻ります。','停在这里，就要后退3格。')}</div></div>
+    </div>
+    ${S.bomb.on?`<div class="ritem rkind compact"><span class="rbomb">${bombSVG(false)}</span><div class="rbody">
+      <div>${bi('ゲームの途中で「貧乏神」があらわれて、いちばんお金持ちのチームにつきます。','游戏中途会出现“穷神”，附在最有钱的小组身上。')}</div>
+      <div>${bi('そのチームの番が終わるたびに、お金を捨てたり、物件を売ったりします。','每当这个小组的回合结束，穷神就会扔掉钱或者卖掉房产。')}</div>
+      <div>${bi('ほかのチームがいるマスを通ると、貧乏神をそのチームにうつせます！','经过其他小组所在的格子，就能把穷神转移给那个小组！')}</div>
+      <div>${bi('3回いたずらすると「大貧乏神」に変身して、もっとひどいことをします。','捣乱3次后，会变身为“大穷神”，做更过分的事。')}</div>
+    </div></div>`:''}`},
+  {t:['みんなで参加','大家一起参与'],cls:'cols',body:[
+    ['var(--k-iv)','会話・面接','会话·面试','買い物、事務室、先生、友達、面接などの場面で、先生が相手の役をします。チームの代表が場面に合った日本語で返して、先生が判定します。ヒント1は大事なところが空欄、ヒント2は答えの例です。','老师扮演购物、办公室、老师、朋友、面试等场景中的对方。小组代表用适合场景的日语回答，由老师来评分。提示1是把重要部分空出来，提示2是参考答案。'],
+    ...(S.opts.read?[['var(--k-read)','音読','朗读','「音読」のマス（大学の面接・留学生の生活）や、結婚・うれしいイベント・物件のマスで、読みがなのない文を声に出して読みます。上手に読めたら、もらえるお金が増えます。','在“朗读”格（大学面试、留学生活）以及结婚、好事和房产的格子里，要大声朗读没有注音的文章。读得好，得到的钱就会增加。']]:[]),
+    ...(S.opts.sorry?[['var(--k-back)','おわび','道歉','悪いことが起きたマスで、上手に謝ったり言い訳したりできたら、損が減ります。','在发生坏事的格子里，如果能好好地道歉或解释，损失就会减少。']]:[]),
+    ...(S.opts.steal?[['var(--k-chance)','横取り','抢答','答えたチームがまちがえたら、ほかのチームが手を挙げて答えられます。正解すると賞金の半分がもらえます。','回答的小组答错时，其他小组可以举手抢答。答对可以得到一半的奖金。']]:[]),
+    ...(S.opts.bet?[['var(--ok)','予想ベット','预测','問題の前に、ほかのチームは「正解する」か「まちがえる」かを予想します。当たれば+'+amt(BET)+'円、はずれたら−'+amt(BET)+'円。','答题前，其他小组预测“会答对”还是“会答错”。猜对+'+amt(BET)+'日元，猜错−'+amt(BET)+'日元。']]:[]),
+    ...(S.opts.half||S.opts.ask?[['var(--k-chance)','助っ人カード','求助卡',
+      [S.opts.half?'「50:50」は選択肢を2つ消します。':'',S.opts.ask?'「友だちに聞く」は、ほかのチームの1人に聞けます。':''].join('')+'各チーム1回ずつ使えます。',
+      [S.opts.half?'“50:50”可以去掉两个选项。':'',S.opts.ask?'“问朋友”可以问其他小组的一个人。':''].join('')+'每个小组各能用一次。']]:[])]
+    .map(([c,kj,kz,tj,tz])=>`<div class="ritem rkind compact"><span class="rk" style="--kc:${c}">${bi(kj,kz)}</span><div>${bi(tj,tz)}</div></div>`).join('')},
+  {t:['ゴールと勝ち方','终点与胜负'],body:`
+    <div class="ritem">${bi('早くゴールしたチームほど、ボーナスが大きくなります。','越早到达终点的小组，奖金越多。')}
+      <div class="bonus">${bonus.map((v,i)=>`<span>${bi(`${i+1}着`,`第${i+1}名`)} +${amt(v)}</span>`).join('')}</div></div>
+    <div class="ritem">${bi('お金がマイナスになったら「借金」です。','钱变成负数就是“欠债”。')}</div>
+    <div class="ritem">${bi('全チームがゴールするか、授業の時間が終わったら、結果発表です。','所有小组都到达终点，或者上课时间结束时，公布结果。')}</div>`}];
+}
+function showRules(back){rulesBack=back||null;ruleIdx=0;renderRules();}
+function renderRules(){
+  const pages=rulePages(),p=pages[ruleIdx],last=ruleIdx===pages.length-1;
+  openCard(`<div class="rules m-${ruleMode}">
+    <div class="rhead">${segHTML('ruleLangSeg','',Object.keys(RULE_MODES),ruleMode,v=>RULE_MODES[v])}<span class="rpage">${ruleIdx+1} / ${pages.length}</span></div>
+    <h2 class="rtitle">${bi(p.t[0],p.t[1])}</h2>
+    <div class="rbody ${p.cls||''}">${p.body}</div>
+    <div class="rdots">${pages.map((_,i)=>`<button type="button" class="${i===ruleIdx?'on':''}" data-i="${i}" aria-label="${i+1}ページ"></button>`).join('')}</div>
+    <div class="foot"><button type="button" class="next alt" id="rPrev"${ruleIdx?'':' hidden'}>${bi('← 前へ','上一页')}</button>
+      <button type="button" class="next" id="rNext">${last?bi('はじめよう！','开始吧！'):bi('次へ →','下一页')}</button></div></div>`,'var(--k-v)');
+  wireSeg('ruleLangSeg',v=>{ruleMode=v;try{localStorage.setItem('n2life-rulelang',v)}catch(e){}renderRules();});
+  document.querySelectorAll('.rdots button').forEach(b=>b.addEventListener('click',()=>{ruleIdx=+b.dataset.i;renderRules();}));
+  $('rPrev').addEventListener('click',()=>{ruleIdx--;renderRules();});
+  $('rNext').addEventListener('click',()=>{if(last)closeRules();else{ruleIdx++;renderRules();}});
+  $('rNext').focus();
+}
+function closeRules(){const b=rulesBack;rulesBack=null;if(b)b();else $('ov').hidden=true;}
+const rulesOpen=()=>!$('ov').hidden&&!!document.querySelector('#card .rules');
+
+/* ---------- settings ---------- */
+function buildSettings(){
+  const seg=$('countSeg');seg.querySelectorAll('button').forEach(b=>b.remove());
+  [1,2,3,4,5].forEach(n=>{const b=document.createElement('button');b.type='button';b.textContent=n===1?'ソロ':n;b.setAttribute('aria-pressed',S.teams.length===n);
+    b.addEventListener('click',()=>{if(S.busy)return;newGame(n);save();});seg.appendChild(b);});
+  $('names').innerHTML=S.teams.map((t,i)=>`<input id="nm${i}" value="${esc(t.name)}" maxlength="10" aria-label="チーム${i+1}の名前">`).join('');
+  S.teams.forEach((t,i)=>$('nm'+i).addEventListener('input',e=>{names[t.ci]=e.target.value||DEFAULT_NAMES[t.ci];t.name=names[t.ci];render();}));
+  S.teams.forEach((t,i)=>$('nm'+i).addEventListener('change',()=>{if(idle())save()}));
+  const lvs=$('lvSeg');lvs.querySelectorAll('label').forEach(l=>l.remove());
+  LEVELS.forEach(lv=>{const l=document.createElement('label');l.className='chk';
+    l.innerHTML=`<input type="checkbox" id="lv${lv}" ${S.levels.includes(lv)?'checked':''}>${lv}`;lvs.appendChild(l);
+    l.querySelector('input').addEventListener('change',e=>{
+      const on=LEVELS.filter(x=>$('lv'+x).checked);
+      if(!on.length){e.target.checked=true;toast('レベルは1つ以上選んでください',true);return;}
+      S.levels=on;buildBoard();render();if(idle())save();
+    });});
+  const qt=$('qtSeg');qt.querySelectorAll('button').forEach(b=>b.remove());
+  QTIMES.forEach(v=>{const b=document.createElement('button');b.type='button';b.textContent=v?v+'秒':'無制限';b.setAttribute('aria-pressed',S.qtime===v);
+    b.addEventListener('click',()=>{S.qtime=v;qt.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));if(idle())save();});qt.appendChild(b);});
+  $('layFixed').setAttribute('aria-pressed',!S.seed);$('layRand').setAttribute('aria-pressed',!!S.seed);$('layShuffle').hidden=!S.seed;
+  const tog=(id,get,set)=>{const el=$(id);el.querySelectorAll('button').forEach(b=>b.remove());
+    [[true,'あり'],[false,'なし']].forEach(([v,l])=>{const b=document.createElement('button');b.type='button';b.textContent=l;b.setAttribute('aria-pressed',get()===v);
+      b.addEventListener('click',()=>{set(v);el.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));if(idle())save();});el.appendChild(b);});};
+  tog('stealSeg',()=>S.opts.steal,v=>S.opts.steal=v);
+  tog('betSeg',()=>S.opts.bet,v=>S.opts.bet=v);
+  tog('halfSeg',()=>S.opts.half,v=>{S.opts.half=v;render();});
+  tog('askSeg',()=>S.opts.ask,v=>{S.opts.ask=v;render();});
+  tog('sorrySeg',()=>S.opts.sorry,v=>S.opts.sorry=v);
+  tog('readSeg',()=>S.opts.read,v=>S.opts.read=v);
+  const rs=$('readThemeSeg');rs.querySelectorAll('label').forEach(l=>l.remove());
+  READ_TILE_THEMES.forEach(k=>{const l=document.createElement('label');l.className='chk';
+    l.innerHTML=`<input type="checkbox" id="rt-${k}" ${S.readThemes.includes(k)?'checked':''}>${READ_NAME[k]}`;rs.appendChild(l);
+    l.querySelector('input').addEventListener('change',e=>{
+      const on=READ_TILE_THEMES.filter(x=>$('rt-'+x).checked);
+      if(!on.length){e.target.checked=true;toast('1つ以上選んでください',true);return;}
+      S.readThemes=on;if(idle())save();});});
+  $('unitOku').setAttribute('aria-pressed',S.unit!=='real');$('unitReal').setAttribute('aria-pressed',S.unit==='real');
+  const ts=$('talkSeg');ts.querySelectorAll('label').forEach(l=>l.remove());
+  ALL_TALK.forEach(k=>{const l=document.createElement('label');l.className='chk';
+    l.innerHTML=`<input type="checkbox" id="ts-${k}" ${S.talkScenes.includes(k)?'checked':''}>${TALK_SCENES[k].n}`;ts.appendChild(l);
+    l.querySelector('input').addEventListener('change',e=>{
+      const on=ALL_TALK.filter(x=>$('ts-'+x).checked);
+      if(!on.length){e.target.checked=true;toast('場面は1つ以上選んでください',true);return;}
+      S.talkScenes=on;if(idle())save();});});
+  const bs=$('bombSeg');bs.querySelectorAll('button').forEach(b=>b.remove());
+  [[true,'あり'],[false,'なし']].forEach(([v,l])=>{const b=document.createElement('button');b.type='button';b.textContent=l;b.setAttribute('aria-pressed',S.bomb.on===v);
+    b.addEventListener('click',()=>{if(S.bomb.on===v)return;S.bomb=newBomb(v);bs.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));render();if(idle())save();});bs.appendChild(b);});
+  $('lenNow').textContent=`いまは${S.len}マス`;
+  const li=LENGTHS.indexOf(S.len),lo=LENGTHS[li-1],hi=LENGTHS[li+1];
+  $('shortenBtn').hidden=!lo;if(lo)$('shortenBtn').textContent=`短くする（→${lo}）`;
+  $('extendBtn').hidden=!hi;if(hi)$('extendBtn').textContent=`長くする（→${hi}）`;
+}
+function changeLen(dir){
+  if(!idle()||S.over)return;
+  const nl=LENGTHS[LENGTHS.indexOf(S.len)+dir];if(!nl)return;
+  if(S.finished>0){toast('もうゴールしたチームがいるので、変えられません',true);return;}
+  if(dir<0){const far=S.teams.find(t=>t.pos>=nl-1);
+    if(far){toast(`${far.name}がもう${far.pos}マス目にいるので、${nl}マスにはできません`,true);return;}}
+  S.len=nl;TILES=buildTiles(nl,S.seed);LAST=TILES.length-1;
+  buildBoard();render();buildSettings();save();
+  if(dir>0){sfx.fan();toast(`ゴールが遠くなった！ ${nl}マスで続行`,false);}
+  else{sfx.card();toast(`ゴールが近くなった！ ${nl}マスで続行`,false);}
+}
+let endArmed=false;
+$('endBtn').addEventListener('click',()=>{
+  const b=$('endBtn');
+  if(!idle()||S.over||!curSlot)return;
+  if(!endArmed){endArmed=true;b.textContent='もう一度押すと結果発表';b.classList.add('warn');
+    setTimeout(()=>{endArmed=false;b.textContent='ここで結果発表';b.classList.remove('warn')},4000);return;}
+  endArmed=false;b.textContent='ここで結果発表';b.classList.remove('warn');endGame();
+});
+$('slotBtn').addEventListener('click',()=>{if(!idle())return;newCount=S.teams.length;newLen=S.len;showSlots();});
+$('missBtn').addEventListener('click',()=>{if(!idle())return;showMisses();});
+$('editBtn').addEventListener('click',()=>{if(!idle())return;showEditor();});
+$('extendBtn').addEventListener('click',()=>changeLen(1));
+function setLayout(seed){
+  if(!idle()||S.over)return;
+  S.seed=seed;TILES=buildTiles(S.len,seed);LAST=TILES.length-1;
+  buildBoard();render();buildSettings();save();sfx.card();
+  toast(seed?'マスの並びをランダムにしました':'マスの並びを元に戻しました',true);
+}
+$('layFixed').addEventListener('click',()=>{if(S.seed)setLayout(0);});
+function setUnit(u){if(!S||S.unit===u)return;S.unit=u;buildBoard();render();buildSettings();if(idle())save();toast(u==='real'?'お金を現実的な単位にしました':'お金を桃鉄ふうの単位にしました',true);}
+$('unitOku').addEventListener('click',()=>setUnit('oku'));
+$('unitReal').addEventListener('click',()=>setUnit('real'));
+$('layRand').addEventListener('click',()=>{if(!S.seed)setLayout(newSeed());});
+$('layShuffle').addEventListener('click',()=>setLayout(newSeed()));
+$('shortenBtn').addEventListener('click',()=>changeLen(-1));
+$('rulesBtn').addEventListener('click',()=>{if(!idle())return;showRules();});
+$('classStart').addEventListener('click',()=>{const m=Math.round(+$('classMin').value);if(!(m>=1&&m<=240)){toast('1〜240分で入れてください',true);return;}startClass(m);});
+$('clockStop').addEventListener('click',stopClass);
+$('spinBtn').addEventListener('click',spin);
+let resetArmed=false;
+$('resetBtn').addEventListener('click',()=>{
+  const b=$('resetBtn');
+  if(!idle())return;
+  if(!resetArmed){resetArmed=true;b.textContent='もう一度押すとリセット';b.classList.add('warn');
+    setTimeout(()=>{resetArmed=false;b.textContent='最初からやり直す';b.classList.remove('warn')},4000);return;}
+  resetArmed=false;b.textContent='最初からやり直す';b.classList.remove('warn');newGame(S.teams.length);save();
+});
+$('sndOn').addEventListener('click',()=>{setMute(false);sfx.coin()});
+$('sndOff').addEventListener('click',()=>setMute(true));
+document.addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
+  if(rulesOpen()){
+    if(e.key==='ArrowRight'){e.preventDefault();$('rNext').click();}
+    else if(e.key==='ArrowLeft'&&!$('rPrev').hidden){e.preventDefault();$('rPrev').click();}
+    else if(e.key==='Escape')closeRules();
+    return;
+  }
+  if(e.code==='Space'&&$('ov').hidden){e.preventDefault();if(!e.repeat)spin();return;}
+  if(!$('ov').hidden&&S.q&&S.q.started&&S.q.handler&&/^[1-4]$/.test(e.key)){const b=document.querySelectorAll('.opt')[+e.key-1];if(b&&!b.disabled)S.q.handler(b);}
+});
+
+setMute(muted);buildWheel();loadLocalCustom();newGame(4,30);updateClock();
+loadLocalSlots();showSlots();
+initCloud();
+</script>
+</body>
+</html>
