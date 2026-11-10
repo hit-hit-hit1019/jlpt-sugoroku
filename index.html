@@ -428,7 +428,7 @@ body.bigview .card{width:100%;border-radius:18px}
 .chk input{width:1.1em;height:1.1em;accent-color:var(--accent)}
 
 
-/* spin zoom overlay + dice */
+/* spin zoom overlay */
 .spinov{position:fixed;inset:0;z-index:60;background:rgba(10,14,24,.82);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(10px,2vh,24px);padding:20px}
 .spinov[hidden]{display:none}
 .spinov .zwheel{width:min(72vmin,560px);height:auto;filter:drop-shadow(0 12px 28px rgba(0,0,0,.5))}
@@ -436,15 +436,6 @@ body.bigview .card{width:100%;border-radius:18px}
 .spinov .zstop{font-family:var(--f-body);font-weight:900;letter-spacing:.04em;font-size:clamp(22px,3.4vmin,40px);background:var(--ng);color:#fff;border:0;border-radius:999px;padding:.45em 1.6em;cursor:pointer;box-shadow:0 6px 0 color-mix(in srgb,var(--ng) 60%,#000);animation:pulse .6s ease-in-out infinite}
 .spinov .zstop:active{transform:translateY(3px);box-shadow:0 2px 0 color-mix(in srgb,var(--ng) 60%,#000)}
 .spinov .zstop[hidden]{display:none}
-.dice{width:min(46vmin,300px);aspect-ratio:1;background:#fff;border-radius:14%;border:6px solid #1b2233;box-shadow:0 18px 40px rgba(0,0,0,.5);display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);padding:9%;gap:4%}
-.dice .pip{border-radius:50%;background:transparent}
-.dice .pip.on{background:#1b2233}
-.dice[data-n="1"] .pip.on{background:var(--ng)}
-.dice.rolling{animation:dicetumble .16s ease-in-out infinite alternate}
-.dice.landed{animation:dicepop .35s ease-out}
-@keyframes dicetumble{from{transform:rotate(-13deg) translateY(-8px) scale(.96)}to{transform:rotate(11deg) translateY(10px) scale(1.04)}}
-@keyframes dicepop{0%{transform:scale(1.18) rotate(4deg)}100%{transform:scale(1) rotate(0)}}
-@media (prefers-reduced-motion:reduce){.dice.rolling,.dice.landed,.spinov .zstop{animation:none}}
 @media (max-width:900px){
   html,body{height:auto}
   .app{grid-template-columns:1fr;height:auto}
@@ -492,7 +483,6 @@ body.bigview .card{width:100%;border-radius:18px}
         <div class="seg" id="countSeg"><span>チーム数</span></div>
         <div class="names" id="names"></div>
         <div class="seg"><span>効果音</span><button type="button" id="sndOn">オン</button><button type="button" id="sndOff">オフ</button></div>
-        <div class="seg" id="moverSeg"><span>進む方法</span></div>
         <div class="seg" id="zoomSeg"><span>回すとき拡大</span></div>
         <div class="seg" id="lvSeg"><span>出題レベル</span></div>
         <div class="qcount" id="qcount"></div>
@@ -519,7 +509,6 @@ body.bigview .card{width:100%;border-radius:18px}
 </div>
 <div class="spinov" id="spinOv" hidden>
   <svg class="zwheel" id="zoomWheel" viewBox="-112 -118 224 230" aria-hidden="true"><g id="zoomWheelG"></g><circle r="16" fill="var(--surface)" stroke="var(--ink)" stroke-width="4"></circle><path d="M0 -92 L-12 -116 L12 -116 Z" fill="var(--accent)" stroke="var(--ink)" stroke-width="3" stroke-linejoin="round"></path></svg>
-  <div class="dice" id="diceEl" hidden></div>
   <div class="zres" id="zoomRes" aria-live="polite"></div>
   <button class="zstop" id="zoomStop" type="button" hidden>ストップ！</button>
 </div>
@@ -1185,7 +1174,7 @@ function restore(d,n){
   TILES=buildTiles(len,g.seed||0);LAST=TILES.length-1;
   S={teams:g.teams.map(t=>({name:t.name,ci:t.ci,color:TEAM_COLORS[t.ci],pos:Math.min(t.pos,LAST),money:t.money,done:t.done||0,job:t.job||null,skip:!!t.skip,double:!!t.double,props:(t.props||[]).filter(id=>PROP[id]),helps:Object.assign({half:true,ask:true},t.helps||{}),st:t.st&&typeof t.st==='object'?t.st:{}})),
      turn:g.turn,finished:g.finished||0,again:!!g.again,over:false,busy:false,last:null,q:null,len,
-     levels:(g.levels||LEVELS).filter(l=>LV[l]),qtime:QTIMES.includes(g.qtime)?g.qtime:20,misses:Array.isArray(g.misses)?g.misses:[],bomb:Object.assign(newBomb(true),g.bomb||{}),bombDone:false,bombMoved:false,seed:g.seed||0,opts:Object.assign({steal:true,bet:true,half:true,ask:true,sorry:true,read:true,mover:'wheel',zoom:true},g.opts||{}),talkScenes:(Array.isArray(g.talkScenes)?g.talkScenes:ALL_TALK).filter(x=>TALK_SCENES[x]),unit:g.unit||'oku',readThemes:(Array.isArray(g.readThemes)?g.readThemes:READ_TILE_THEMES).filter(x=>READ_NAME[x])};
+     levels:(g.levels||LEVELS).filter(l=>LV[l]),qtime:QTIMES.includes(g.qtime)?g.qtime:20,misses:Array.isArray(g.misses)?g.misses:[],bomb:Object.assign(newBomb(true),g.bomb||{}),bombDone:false,bombMoved:false,seed:g.seed||0,opts:Object.assign({steal:true,bet:true,half:true,ask:true,sorry:true,read:true,zoom:true},g.opts||{}),talkScenes:(Array.isArray(g.talkScenes)?g.talkScenes:ALL_TALK).filter(x=>TALK_SCENES[x]),unit:g.unit||'oku',readThemes:(Array.isArray(g.readThemes)?g.readThemes:READ_TILE_THEMES).filter(x=>READ_NAME[x])};
   if(S.bomb.team>=S.teams.length||(S.bomb.team>=0&&S.teams[S.bomb.team].done))S.bomb.team=-1;
   if(!S.levels.length)S.levels=[...LEVELS];
   curSlot=n;slotsOpen=false;decks={};$('ov').hidden=true;
@@ -1255,7 +1244,7 @@ function newGame(n,len,rand){
   TILES=buildTiles(len,seed);LAST=TILES.length-1;
   S={teams:Array.from({length:n},(_,i)=>({name:n===1&&names[0]===DEFAULT_NAMES[0]?'プレイヤー':names[i],ci:i,color:TEAM_COLORS[i],pos:0,money:10,done:0,job:null,skip:false,double:false,props:[],helps:{half:true,ask:true},st:{}})),
      turn:0,busy:false,finished:0,last:null,over:false,again:false,q:null,len,seed,
-     levels:prev&&prev.levels?prev.levels:[...LEVELS],qtime:prev?prev.qtime:20,misses:[],bomb:newBomb(prev&&prev.bomb?prev.bomb.on:true),bombDone:false,bombMoved:false,opts:Object.assign({steal:true,bet:true,half:true,ask:true,sorry:true,read:true,mover:'wheel',zoom:true},prev&&prev.opts||{}),talkScenes:prev&&prev.talkScenes?[...prev.talkScenes]:[...ALL_TALK],unit:prev&&prev.unit||'oku',readThemes:prev&&prev.readThemes?[...prev.readThemes]:[...READ_TILE_THEMES]};
+     levels:prev&&prev.levels?prev.levels:[...LEVELS],qtime:prev?prev.qtime:20,misses:[],bomb:newBomb(prev&&prev.bomb?prev.bomb.on:true),bombDone:false,bombMoved:false,opts:Object.assign({steal:true,bet:true,half:true,ask:true,sorry:true,read:true,zoom:true},prev&&prev.opts||{}),talkScenes:prev&&prev.talkScenes?[...prev.talkScenes]:[...ALL_TALK],unit:prev&&prev.unit||'oku',readThemes:prev&&prev.readThemes?[...prev.readThemes]:[...READ_TILE_THEMES]};
   decks={};$('ov').hidden=true;timeUp=classEnd?classEnd<=Date.now():false;
   buildBoard();render();$('spinRes').textContent='スペースキーで回す・止める';buildSettings();
 }
@@ -1383,31 +1372,27 @@ const SPIN_SPEED=0.75;            // degrees per ms while spinning freely
 const AUTO_STOP_MS=4000;          // stops by itself after this long
 let spinPhase='idle', autoStopTimer=null, spinSeg=0;
 function setSpinBtn(){
-  const b=$('spinBtn'),dice=S&&S.opts&&S.opts.mover==='dice';
+  const b=$('spinBtn');
   if(spinPhase==='free'){b.textContent='ストップ！';b.classList.add('stop');b.disabled=false;}
-  else if(spinPhase==='dice'){b.textContent='サイコロを投げています…';b.classList.remove('stop');b.disabled=true;}
-  else{b.textContent=dice?'サイコロを投げる':'ルーレットを回す';b.classList.remove('stop');b.disabled=S.busy||S.over||!curSlot;}
+  else{b.textContent='ルーレットを回す';b.classList.remove('stop');b.disabled=S.busy||S.over||!curSlot;}
 }
 function tickSeg(){const s2=Math.floor((rot+30)/60);if(s2!==spinSeg){spinSeg=s2;sfx.tick();}}
 function setRot(){const t=`rotate(${rot})`;$('wheelG').setAttribute('transform',t);const zg=$('zoomWheelG');if(zg)zg.setAttribute('transform',t);}
 const zoomOn=()=>!!(S&&S.opts&&S.opts.zoom);
-function showSpinOv(kind){
+function showSpinOv(){
   if(!zoomOn())return false;
-  $('spinOv').hidden=false;$('zoomWheel').hidden=kind!=='wheel';$('diceEl').hidden=kind!=='dice';
-  $('zoomStop').hidden=kind!=='wheel';$('zoomRes').textContent=kind==='wheel'?'ストップを押してね':'';
+  $('spinOv').hidden=false;$('zoomWheel').hidden=false;
+  $('zoomStop').hidden=false;$('zoomRes').textContent='ストップを押してね';
   setRot();return true;
 }
 function hideSpinOv(){$('spinOv').hidden=true;$('zoomStop').hidden=true;}
-const DICE_PIPS={1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
-function diceFace(n){const el=$('diceEl');el.dataset.n=n;el.innerHTML=Array.from({length:9},(_,i)=>`<span class="pip${DICE_PIPS[n].includes(i)?' on':''}"></span>`).join('');}
 function spin(){
   if(spinPhase==='free'){stopSpin();return;}
   if(S.busy||S.over||!$('ov').hidden||!curSlot||spinPhase!=='idle')return;
-  if(S.opts&&S.opts.mover==='dice'){rollDice();return;}
   S.busy=true;S.last=null;spinPhase='free';render();setSpinBtn();
   spinSeg=Math.floor((rot+30)/60);
   $('spinRes').textContent='ストップを押してね';
-  showSpinOv('wheel');
+  showSpinOv();
   let prev=performance.now();
   (function free(now){
     if(spinPhase!=='free')return;
@@ -1416,21 +1401,6 @@ function spin(){
     requestAnimationFrame(free);
   })(prev);
   autoStopTimer=setTimeout(stopSpin,AUTO_STOP_MS);
-}
-function rollDice(){
-  S.busy=true;S.last=null;spinPhase='dice';render();setSpinBtn();
-  const n=1+rnd(6),shown=showSpinOv('dice'),el=$('diceEl');
-  $('spinRes').textContent='サイコロを投げた！';
-  el.classList.remove('landed');el.classList.add('rolling');
-  diceFace(1+rnd(6));
-  const cyc=setInterval(()=>{diceFace(1+rnd(6));sfx.tick();},110);
-  setTimeout(()=>{
-    clearInterval(cyc);diceFace(n);el.classList.remove('rolling');el.classList.add('landed');sfx.beep();
-    $('spinRes').textContent=`${n} が出た！`;
-    if(shown)$('zoomRes').textContent=`${n} が出た！`;
-    spinPhase='idle';setSpinBtn();$('spinBtn').disabled=true;
-    wait(shown?950:450).then(()=>{hideSpinOv();move(S.teams[S.turn],n);});
-  },reduce?300:1600);
 }
 function stopSpin(){
   if(spinPhase!=='free')return;
@@ -2495,7 +2465,7 @@ function rulePages(){
       <div class="bonus">${bonus.map((v,i)=>`<span>${bi(`${i+1}着`,`第${i+1}名`)} +${amt(v)}</span>`).join('')}</div></div>`+
     item('お金がマイナスになったら「借金」。借金は総資産から引かれます。','钱变成负数就是“欠债”，欠债会从总资产中扣除。')},
   {t:['進み方','怎么玩'],body:
-    step(1,S.opts.mover==='dice'?'サイコロを投げて、出た目の数だけ進む。':'ルーレットを回して「ストップ！」で止める。押さないと約'+auto+'秒で自動で止まる。',S.opts.mover==='dice'?'掷骰子，按点数前进。':`转动轮盘，按“停止！”停下。不按的话，大约${auto}秒后会自动停下。`)+
+    step(1,`ルーレットを回して「ストップ！」で止める。押さないと約${auto}秒で自動で止まる。`,`转动轮盘，按“停止！”停下。不按的话，大约${auto}秒后会自动停下。`)+
     step(2,'止まったマスの問題に答える。レベル（N3・N2・N1）が高いほど賞金も大きい。会話や音読は先生が判定。','回答所停格子的题目。难度（N3、N2、N1）越高，奖金越多。会话和朗读由老师评分。')+
     step(3,(qt?`制限時間は${qt}秒。早く正解するとボーナス。`:'答える時間は無制限。')+(helps?'困ったら助っ人カードを1回ずつ使える。':''),
            (qt?`答题时间为${qt}秒，越快答对奖金越多。`:'答题没有时间限制。')+(helps?'遇到困难时，求助卡各能用一次。':''))},
@@ -2539,9 +2509,6 @@ function buildSettings(){
   const qt=$('qtSeg');qt.querySelectorAll('button').forEach(b=>b.remove());
   QTIMES.forEach(v=>{const b=document.createElement('button');b.type='button';b.textContent=v?v+'秒':'無制限';b.setAttribute('aria-pressed',S.qtime===v);
     b.addEventListener('click',()=>{S.qtime=v;qt.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));if(idle())save();});qt.appendChild(b);});
-  const mv=$('moverSeg');mv.querySelectorAll('button').forEach(b=>b.remove());
-  [['wheel','ルーレット'],['dice','サイコロ']].forEach(([v,l])=>{const b=document.createElement('button');b.type='button';b.textContent=l;b.setAttribute('aria-pressed',(S.opts.mover||'wheel')===v);
-    b.addEventListener('click',()=>{S.opts.mover=v;mv.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));setSpinBtn();if(idle())save();});mv.appendChild(b);});
   const zm=$('zoomSeg');zm.querySelectorAll('button').forEach(b=>b.remove());
   [[true,'拡大する'],[false,'しない']].forEach(([v,l])=>{const b=document.createElement('button');b.type='button';b.textContent=l;b.setAttribute('aria-pressed',!!S.opts.zoom===v);
     b.addEventListener('click',()=>{S.opts.zoom=v;zm.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));if(idle())save();});zm.appendChild(b);});
