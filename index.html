@@ -450,6 +450,13 @@ body.bigview .card{width:100%;border-radius:18px}
 @keyframes dicebounce{from{transform:rotateX(-14deg) rotateY(18deg) translateY(-16px)}to{transform:rotateX(-14deg) rotateY(18deg) translateY(14px)}}
 .dshadow{width:calc(var(--ds)*1.15);height:calc(var(--ds)*.18);border-radius:50%;background:rgba(0,0,0,.45);filter:blur(6px);margin-top:calc(var(--ds)*-.35)}
 @media (prefers-reduced-motion:reduce){.dcube.rolling,.dscene.rolling .dtilt{animation:none}}
+.drow{display:flex;gap:5vmin;align-items:center;justify-content:center}
+.dscene.two{--ds:min(29vmin,185px)}
+.dscene.two .dshadow{width:calc(var(--ds)*2.7)}
+.dface .fnum{grid-column:1/-1;grid-row:1/-1;display:grid;place-items:center;font-family:var(--f-disp);font-size:calc(var(--ds)*.36)}
+.dcube.fate .dface{background:linear-gradient(145deg,#3d4457,#171b24);border-color:#05070a}
+.dcube.fate .fnum.pos{color:#7fe3a0}
+.dcube.fate .fnum.neg{color:#ff9090}
 
 .spinov{position:fixed;inset:0;z-index:60;background:rgba(10,14,24,.82);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(10px,2vh,24px);padding:20px}
 .spinov[hidden]{display:none}
@@ -532,7 +539,8 @@ body.bigview .card{width:100%;border-radius:18px}
 </div>
 <div class="spinov" id="spinOv" hidden>
   <svg class="zwheel" id="zoomWheel" viewBox="-112 -118 224 230" aria-hidden="true"><g id="zoomWheelG"></g><circle r="16" fill="var(--surface)" stroke="var(--ink)" stroke-width="4"></circle><path d="M0 -92 L-12 -116 L12 -116 Z" fill="var(--accent)" stroke="var(--ink)" stroke-width="3" stroke-linejoin="round"></path></svg>
-  <div class="dscene" id="diceScene" hidden><div class="dtilt"><div class="dcube" id="diceCube"></div></div><div class="dshadow"></div></div>
+  <svg class="zwheel" id="fateWheel" viewBox="-112 -118 224 230" aria-hidden="true" style="display:none"><g id="fateWheelG"></g><circle r="16" fill="var(--surface)" stroke="var(--ink)" stroke-width="4"></circle><path d="M0 -92 L-12 -116 L12 -116 Z" fill="var(--accent)" stroke="var(--ink)" stroke-width="3" stroke-linejoin="round"></path></svg>
+  <div class="dscene" id="diceScene" hidden><div class="drow" id="diceRow"></div><div class="dshadow"></div></div>
   <div class="zres" id="zoomRes" aria-live="polite"></div>
   <button class="zstop" id="zoomStop" type="button" hidden>ストップ！</button>
 </div>
@@ -702,6 +710,7 @@ const CHANCE=[
  {t:'collect',a:1,l:()=>`今日は誕生日！<br>全チームから${amt(1)}円ずつもらう`},
  {t:'give',a:1,l:()=>`みんなにおごることに…<br>全チームに${amt(1)}円ずつ払う`},
  {t:'again',l:'ラッキー！<br>もう一度ルーレットを回せる'},
+ {t:'fate',l:'運命ルーレット！<br>プラスかマイナスか、回して決まる'},
  {t:'rich',a:3,l:()=>`いちばんお金持ちのチームから<br>${amt(3)}円もらう`},
  {t:'cash',a:4,l:()=>`財布を拾って交番に届けた。<br>お礼に${amt(4)}円もらう`},
  {t:'storm',l:'台風が来た！<br>物件を1つ失う'},
@@ -1198,7 +1207,7 @@ function restore(d,n){
   TILES=buildTiles(len,g.seed||0);LAST=TILES.length-1;
   S={teams:g.teams.map(t=>({name:t.name,ci:t.ci,color:TEAM_COLORS[t.ci],pos:Math.min(t.pos,LAST),money:t.money,done:t.done||0,job:t.job||null,skip:!!t.skip,double:!!t.double,props:(t.props||[]).filter(id=>PROP[id]),helps:Object.assign({half:true,ask:true},t.helps||{}),st:t.st&&typeof t.st==='object'?t.st:{}})),
      turn:g.turn,finished:g.finished||0,again:!!g.again,over:false,busy:false,last:null,q:null,len,
-     levels:(g.levels||LEVELS).filter(l=>LV[l]),qtime:QTIMES.includes(g.qtime)?g.qtime:20,misses:Array.isArray(g.misses)?g.misses:[],bomb:Object.assign(newBomb(true),g.bomb||{}),bombDone:false,bombMoved:false,seed:g.seed||0,opts:Object.assign({steal:true,bet:true,half:true,ask:true,sorry:true,read:true,mover:'wheel',zoom:true},g.opts||{}),talkScenes:(Array.isArray(g.talkScenes)?g.talkScenes:ALL_TALK).filter(x=>TALK_SCENES[x]),unit:g.unit||'oku',readThemes:(Array.isArray(g.readThemes)?g.readThemes:READ_TILE_THEMES).filter(x=>READ_NAME[x])};
+     levels:(g.levels||LEVELS).filter(l=>LV[l]),qtime:QTIMES.includes(g.qtime)?g.qtime:20,misses:Array.isArray(g.misses)?g.misses:[],bomb:Object.assign(newBomb(true),g.bomb||{}),bombDone:false,bombMoved:false,seed:g.seed||0,opts:Object.assign({steal:true,bet:true,half:true,ask:true,sorry:true,read:true,mover:'wheel',diceN:1,zoom:true},g.opts||{}),talkScenes:(Array.isArray(g.talkScenes)?g.talkScenes:ALL_TALK).filter(x=>TALK_SCENES[x]),unit:g.unit||'oku',readThemes:(Array.isArray(g.readThemes)?g.readThemes:READ_TILE_THEMES).filter(x=>READ_NAME[x])};
   if(S.bomb.team>=S.teams.length||(S.bomb.team>=0&&S.teams[S.bomb.team].done))S.bomb.team=-1;
   if(!S.levels.length)S.levels=[...LEVELS];
   curSlot=n;slotsOpen=false;decks={};$('ov').hidden=true;
@@ -1268,7 +1277,7 @@ function newGame(n,len,rand){
   TILES=buildTiles(len,seed);LAST=TILES.length-1;
   S={teams:Array.from({length:n},(_,i)=>({name:n===1&&names[0]===DEFAULT_NAMES[0]?'プレイヤー':names[i],ci:i,color:TEAM_COLORS[i],pos:0,money:10,done:0,job:null,skip:false,double:false,props:[],helps:{half:true,ask:true},st:{}})),
      turn:0,busy:false,finished:0,last:null,over:false,again:false,q:null,len,seed,
-     levels:prev&&prev.levels?prev.levels:[...LEVELS],qtime:prev?prev.qtime:20,misses:[],bomb:newBomb(prev&&prev.bomb?prev.bomb.on:true),bombDone:false,bombMoved:false,opts:Object.assign({steal:true,bet:true,half:true,ask:true,sorry:true,read:true,mover:'wheel',zoom:true},prev&&prev.opts||{}),talkScenes:prev&&prev.talkScenes?[...prev.talkScenes]:[...ALL_TALK],unit:prev&&prev.unit||'oku',readThemes:prev&&prev.readThemes?[...prev.readThemes]:[...READ_TILE_THEMES]};
+     levels:prev&&prev.levels?prev.levels:[...LEVELS],qtime:prev?prev.qtime:20,misses:[],bomb:newBomb(prev&&prev.bomb?prev.bomb.on:true),bombDone:false,bombMoved:false,opts:Object.assign({steal:true,bet:true,half:true,ask:true,sorry:true,read:true,mover:'wheel',diceN:1,zoom:true},prev&&prev.opts||{}),talkScenes:prev&&prev.talkScenes?[...prev.talkScenes]:[...ALL_TALK],unit:prev&&prev.unit||'oku',readThemes:prev&&prev.readThemes?[...prev.readThemes]:[...READ_TILE_THEMES]};
   decks={};$('ov').hidden=true;timeUp=classEnd?classEnd<=Date.now():false;
   buildBoard();render();$('spinRes').textContent='スペースキーで回す・止める';buildSettings();
 }
@@ -1414,30 +1423,53 @@ function showSpinOv(kind){
 const DICE_PIPS={1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
 const DICE_FACE_TF={1:'rotateY(0deg)',6:'rotateY(180deg)',3:'rotateY(90deg)',4:'rotateY(-90deg)',2:'rotateX(90deg)',5:'rotateX(-90deg)'};
 const DICE_FINAL={1:'rotateX(0deg) rotateY(0deg)',6:'rotateX(0deg) rotateY(-180deg)',3:'rotateX(0deg) rotateY(-90deg)',4:'rotateX(0deg) rotateY(90deg)',2:'rotateX(-90deg) rotateY(0deg)',5:'rotateX(90deg) rotateY(0deg)'};
-function buildDice(){
-  const c=$('diceCube');if(c.children.length)return;
+function hideSpinOv(){$('spinOv').hidden=true;$('zoomStop').hidden=true;$('fateWheel').style.display='none';}
+function buildCube(fate){
+  const c=document.createElement('div');c.className='dcube'+(fate?' fate':'');
   [1,2,3,4,5,6].forEach(n=>{const f=document.createElement('div');f.className='dface f'+n;
-    f.innerHTML=Array.from({length:9},(_,i)=>`<span class="pip${DICE_PIPS[n].includes(i)?' on':''}"></span>`).join('');c.appendChild(f);});
+    if(fate){const v=FATE_BY_FACE[n];f.innerHTML=`<span class="fnum ${v>0?'pos':'neg'}">${v>0?'+'+v:'−'+Math.abs(v)}</span>`;}
+    else f.innerHTML=Array.from({length:9},(_,k)=>`<span class="pip${DICE_PIPS[n].includes(k)?' on':''}"></span>`).join('');
+    c.appendChild(f);});
+  return c;
 }
+function showDiceScene(){ $('spinOv').hidden=false;$('zoomWheel').hidden=true;$('zoomWheel').style.display='none';$('fateWheel').style.display='none';$('diceScene').hidden=false;$('diceScene').style.display='';$('zoomStop').hidden=true;$('zoomRes').textContent=''; }
 function rollDice(){
-  buildDice();
   S.busy=true;S.last=null;spinPhase='dice';render();setSpinBtn();
-  const n=1+rnd(6),scene=$('diceScene'),cube=$('diceCube');
+  const count=S.opts.diceN===2?2:1, scene=$('diceScene'), row=$('diceRow');
+  const results=Array.from({length:count},()=>1+rnd(6)), sum=results.reduce((a,b)=>a+b,0);
   $('spinRes').textContent='サイコロを投げた！';
-  // the dice scene is the point of dice mode, so it always shows big (the zoom setting is for the roulette)
-  $('spinOv').hidden=false;$('zoomWheel').hidden=true;$('zoomWheel').style.display='none';scene.hidden=false;scene.style.display='';$('zoomStop').hidden=true;$('zoomRes').textContent='';
-  cube.classList.remove('settle');cube.style.transform='';cube.classList.add('rolling');scene.classList.add('rolling');
+  showDiceScene();scene.classList.toggle('two',count===2);
+  row.innerHTML='';const cubes=results.map(()=>{const t=document.createElement('div');t.className='dtilt';const c=buildCube(false);t.appendChild(c);row.appendChild(t);return c;});
+  cubes.forEach(c=>c.classList.add('rolling'));scene.classList.add('rolling');
   const cyc=setInterval(()=>sfx.tick(),130);
   setTimeout(()=>{
-    clearInterval(cyc);cube.classList.remove('rolling');scene.classList.remove('rolling');
-    cube.classList.add('settle');cube.style.transform=DICE_FINAL[n];
-    setTimeout(()=>{sfx.beep();$('spinRes').textContent=`${n} が出た！`;$('zoomRes').textContent=`${n} が出た！`;
+    clearInterval(cyc);scene.classList.remove('rolling');
+    cubes.forEach((c,k)=>{c.classList.remove('rolling');c.classList.add('settle');c.style.transform=DICE_FINAL[results[k]];});
+    setTimeout(()=>{sfx.beep();
+      $('spinRes').textContent=count===2?`${results[0]} と ${results[1]} で ${sum} が出た！`:`${sum} が出た！`;
+      $('zoomRes').textContent=count===2?`${results[0]} ＋ ${results[1]} ＝ ${sum}！`:`${sum} が出た！`;
       spinPhase='idle';setSpinBtn();$('spinBtn').disabled=true;
-      wait(1000).then(()=>{hideSpinOv();move(S.teams[S.turn],n);});
+      wait(1000).then(()=>{hideSpinOv();move(S.teams[S.turn],sum);});
     },reduce?60:620);
   },reduce?300:1400);
 }
-function hideSpinOv(){$('spinOv').hidden=true;$('zoomStop').hidden=true;}
+const FATE_BY_FACE={1:6,2:2,3:4,4:-4,5:-6,6:-2};
+function fateDice(tm){
+  const scene=$('diceScene'), row=$('diceRow'), face=1+rnd(6), val=FATE_BY_FACE[face];
+  $('spinRes').textContent='運命サイコロ！';
+  showDiceScene();scene.classList.remove('two');$('zoomRes').textContent='運命サイコロ！';
+  row.innerHTML='';const t=document.createElement('div');t.className='dtilt';const c=buildCube(true);t.appendChild(c);row.appendChild(t);
+  c.classList.add('rolling');scene.classList.add('rolling');
+  const cyc=setInterval(()=>sfx.tick(),130);
+  setTimeout(()=>{
+    clearInterval(cyc);scene.classList.remove('rolling');c.classList.remove('rolling');c.classList.add('settle');c.style.transform=DICE_FINAL[face];
+    setTimeout(()=>{ $('spinRes').textContent=val>0?`+${val} が出た！`:`−${Math.abs(val)} が出た！`;
+      $('zoomRes').textContent=val>0?`+${val}！ ${val}マス進む！`:`−${Math.abs(val)}！ ${Math.abs(val)}マス戻る…`;
+      val>0?sfx.fan():sfx.ng();
+      wait(1200).then(()=>{hideSpinOv();val>0?move(tm,val,true):moveBack(tm,-val);});
+    },reduce?60:620);
+  },reduce?300:1400);
+}
 function spin(){
   if(spinPhase==='free'){stopSpin();return;}
   if(S.busy||S.over||!$('ov').hidden||!curSlot||spinPhase!=='idle')return;
@@ -1472,6 +1504,50 @@ function stopSpin(){
     if(shown)$('zoomRes').textContent=`${n} が出た！`;
     wait(shown?950:450).then(()=>{hideSpinOv();move(S.teams[S.turn],n);});
   })(t0);
+}
+/* fate roulette (chance card): segments +6 +4 +2 -2 -4 -6 */
+const FATE=[6,4,2,-2,-4,-6];
+let fateRot=0;
+function buildFateWheel(){
+  const g=$('fateWheelG');if(!g)return;
+  const cols=['#8fd0a0','#a8d8ea','#ffe28a','#f5a3a3','#ef7d7d','#d9534f'];
+  let h='';
+  for(let i=0;i<6;i++){
+    const a0=(i*60-30)*Math.PI/180,a1=(i*60+30)*Math.PI/180,R=100,v=FATE[i];
+    h+=`<path d="M0 0 L${R*Math.sin(a0)} ${-R*Math.cos(a0)} A${R} ${R} 0 0 1 ${R*Math.sin(a1)} ${-R*Math.cos(a1)} Z" fill="${cols[i]}" stroke="#1b2233" stroke-width="3"/>`;
+    h+=`<text transform="rotate(${i*60}) translate(0 -62)" text-anchor="middle" dominant-baseline="central" font-family="Dela Gothic One, sans-serif" font-size="34" fill="#1b2233">${v>0?'+'+v:'−'+Math.abs(v)}</text>`;
+  }
+  h+=`<circle r="100" fill="none" stroke="#1b2233" stroke-width="5"/>`;
+  g.innerHTML=h;
+}
+function fateSpin(tm){ if(S.opts&&S.opts.mover==='dice'){fateDice(tm);return;} fateWheelSpin(tm); }
+function fateWheelSpin(tm){
+  buildFateWheel();
+  $('spinOv').hidden=false;$('zoomWheel').style.display='none';$('diceScene').style.display='none';
+  $('fateWheel').style.display='';$('zoomStop').hidden=true;$('zoomRes').textContent='運命ルーレット！';
+  $('spinRes').textContent='運命ルーレット！';
+  const setR=()=>$('fateWheelG').setAttribute('transform',`rotate(${fateRot})`);
+  setR();
+  let seg=Math.floor((fateRot+30)/60);
+  const tick=()=>{const s2=Math.floor((fateRot+30)/60);if(s2!==seg){seg=s2;sfx.tick();}};
+  const prev0=performance.now();let prev=prev0;
+  const spinMs=reduce?200:900, v=0.9;
+  const free=now=>{
+    if(now-prev0<spinMs){fateRot+=v*Math.min(50,now-prev);prev=now;setR();tick();requestAnimationFrame(free);return;}
+    // decelerate to a stop; where it lands decides the value
+    const D=(reduce?250:1400)+Math.random()*400, from=fateRot, t0=performance.now();
+    (function slow(now2){
+      const t=Math.min(D,now2-t0);
+      fateRot=from+v*(t-t*t/(2*D));setR();tick();
+      if(t<D){requestAnimationFrame(slow);return;}
+      const a=((fateRot%360)+360)%360, idx=(Math.round(((360-a)%360)/60)%6), val=FATE[idx];
+      $('spinRes').textContent=val>0?`+${val} が出た！`:`−${Math.abs(val)} が出た！`;
+      $('zoomRes').textContent=val>0?`+${val}！ ${val}マス進む！`:`−${Math.abs(val)}！ ${Math.abs(val)}マス戻る…`;
+      val>0?sfx.fan():sfx.ng();
+      wait(1200).then(()=>{hideSpinOv();val>0?move(tm,val,true):moveBack(tm,-val);});
+    })(performance.now());
+  };
+  requestAnimationFrame(free);
 }
 function pay(tm){
   const sal=tm.job?tm.job.sal:1,inc=propIncome(tm);tm.money+=sal+inc;sfx.coin();
@@ -1763,6 +1839,7 @@ async function chance(tm,tile){
   const el=$('after');const others=S.teams.filter(t=>t!==tm);let msg='';
   switch(c.t){
     case 'fwd': render();foot(el,'2マス進む',()=>{$('ov').hidden=true;move(tm,c.n,true)});return;
+    case 'fate': render();foot(el,'運命ルーレットを回す',()=>{$('ov').hidden=true;fateSpin(tm)});return;
     case 'oharai':{
       if(S.bomb.team===S.teams.indexOf(tm)){const to=richest(tm);
         if(to){S.bomb.team=S.teams.indexOf(to);if(!S.bomb.king)S.bomb.turns=0;msg=verdictHTML('ok',`${bombName()}は${esc(to.name)}へ飛んでいった！`,0);sfx.ok();}
@@ -2518,7 +2595,7 @@ function rulePages(){
       <div class="bonus">${bonus.map((v,i)=>`<span>${bi(`${i+1}着`,`第${i+1}名`)} +${amt(v)}</span>`).join('')}</div></div>`+
     item('お金がマイナスになったら「借金」。借金は総資産から引かれます。','钱变成负数就是“欠债”，欠债会从总资产中扣除。')},
   {t:['進み方','怎么玩'],body:
-    step(1,S.opts.mover==='dice'?'サイコロを投げて、出た目の数だけ進む。':'ルーレットを回して「ストップ！」で止める。押さないと約'+auto+'秒で自動で止まる。',S.opts.mover==='dice'?'掷骰子，按点数前进。':`转动轮盘，按“停止！”停下。不按的话，大约${auto}秒后会自动停下。`)+
+    step(1,S.opts.mover==='dice'?(S.opts.diceN===2?'サイコロ2個を投げて、合計の数だけ進む。':'サイコロを投げて、出た目の数だけ進む。'):'ルーレットを回して「ストップ！」で止める。押さないと約'+auto+'秒で自動で止まる。',S.opts.mover==='dice'?(S.opts.diceN===2?'掷两个骰子，按总点数前进。':'掷骰子，按点数前进。'):`转动轮盘，按“停止！”停下。不按的话，大约${auto}秒后会自动停下。`)+
     step(2,'止まったマスの問題に答える。レベル（N3・N2・N1）が高いほど賞金も大きい。会話や音読は先生が判定。','回答所停格子的题目。难度（N3、N2、N1）越高，奖金越多。会话和朗读由老师评分。')+
     step(3,(qt?`制限時間は${qt}秒。早く正解するとボーナス。`:'答える時間は無制限。')+(helps?'困ったら助っ人カードを1回ずつ使える。':''),
            (qt?`答题时间为${qt}秒，越快答对奖金越多。`:'答题没有时间限制。')+(helps?'遇到困难时，求助卡各能用一次。':''))},
@@ -2563,8 +2640,9 @@ function buildSettings(){
   QTIMES.forEach(v=>{const b=document.createElement('button');b.type='button';b.textContent=v?v+'秒':'無制限';b.setAttribute('aria-pressed',S.qtime===v);
     b.addEventListener('click',()=>{S.qtime=v;qt.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));if(idle())save();});qt.appendChild(b);});
   const mv=$('moverSeg');mv.querySelectorAll('button').forEach(b=>b.remove());
-  [['wheel','ルーレット'],['dice','サイコロ']].forEach(([v,l])=>{const b=document.createElement('button');b.type='button';b.textContent=l;b.setAttribute('aria-pressed',(S.opts.mover||'wheel')===v);
-    b.addEventListener('click',()=>{S.opts.mover=v;mv.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));setSpinBtn();if(idle())save();});mv.appendChild(b);});
+  [['wheel','ルーレット'],['dice1','サイコロ×1'],['dice2','サイコロ×2']].forEach(([v,l])=>{const cur=S.opts.mover==='dice'?(S.opts.diceN===2?'dice2':'dice1'):'wheel';
+    const b=document.createElement('button');b.type='button';b.textContent=l;b.setAttribute('aria-pressed',cur===v);
+    b.addEventListener('click',()=>{if(v==='wheel'){S.opts.mover='wheel';}else{S.opts.mover='dice';S.opts.diceN=v==='dice2'?2:1;}mv.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));setSpinBtn();if(idle())save();});mv.appendChild(b);});
   const zm=$('zoomSeg');zm.querySelectorAll('button').forEach(b=>b.remove());
   [[true,'拡大する'],[false,'しない']].forEach(([v,l])=>{const b=document.createElement('button');b.type='button';b.textContent=l;b.setAttribute('aria-pressed',!!S.opts.zoom===v);
     b.addEventListener('click',()=>{S.opts.zoom=v;zm.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));if(idle())save();});zm.appendChild(b);});
@@ -2679,7 +2757,7 @@ document.addEventListener('keydown',e=>{
   if(!$('ov').hidden&&S.q&&S.q.started&&S.q.handler&&/^[1-4]$/.test(e.key)){const b=document.querySelectorAll('.opt')[+e.key-1];if(b&&!b.disabled)S.q.handler(b);}
 });
 
-setMute(muted);buildWheel();loadLocalCustom();newGame(4,30);updateClock();
+setMute(muted);buildWheel();buildFateWheel();loadLocalCustom();newGame(4,30);updateClock();
 loadLocalSlots();showSlots();
 initCloud();
 </script>
