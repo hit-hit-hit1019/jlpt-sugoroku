@@ -85,7 +85,6 @@ h1 small{display:block;font-family:var(--f-body);font-weight:700;font-size:clamp
 .dot{width:clamp(22px,2vw,40px);height:clamp(22px,2vw,40px);border-radius:50%;background:var(--tc);border:3px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.3);flex:none}
 
 .wheelbox{display:flex;flex-direction:column;align-items:center;gap:clamp(6px,.7vw,12px);flex:1 1 auto;min-height:0;justify-content:center}
-.wheel{width:min(100%,23vh);height:auto;aspect-ratio:1;max-width:100%;filter:drop-shadow(0 6px 10px rgba(0,0,0,.25))}
 .spin{font-family:var(--f-body);font-weight:900;letter-spacing:.04em;font-size:clamp(18px,1.5vw,30px);background:var(--accent);color:var(--accent-ink);border:0;border-radius:999px;
   padding:.45em 1.4em;box-shadow:0 5px 0 color-mix(in srgb,var(--accent) 60%,#000);transition:transform .1s}
 .spin:active{transform:translateY(3px);box-shadow:0 2px 0 color-mix(in srgb,var(--accent) 60%,#000)}
@@ -477,7 +476,6 @@ body.bigview .card{width:100%;border-radius:18px}
   .app{grid-template-columns:1fr;height:auto}
   .panel{overflow:visible}
   .board{grid-template-rows:none;grid-auto-rows:minmax(88px,auto)}
-  .wheel{width:min(70vw,260px)}
   .opts,.choice,.shop{grid-template-columns:1fr}
   .sv{grid-template-columns:1fr}
   .parts{grid-template-columns:1fr 1fr}
@@ -501,11 +499,6 @@ body.bigview .card{width:100%;border-radius:18px}
     <div class="turn"><span class="dot" id="turnDot"></span><div><div class="lab">いまの番</div><div class="nm" id="turnName"></div></div></div>
     <div class="clock" id="clock" hidden><span class="lab">授業の残り</span><span class="cnum" id="cnum">0:00</span><button type="button" id="clockStop">止める</button></div>
     <div class="wheelbox">
-      <svg class="wheel" viewBox="-112 -118 224 230" aria-hidden="true">
-        <g id="wheelG"></g>
-        <circle r="16" fill="var(--surface)" stroke="var(--ink)" stroke-width="4"></circle>
-        <path d="M0 -92 L-12 -116 L12 -116 Z" fill="var(--accent)" stroke="var(--ink)" stroke-width="3" stroke-linejoin="round"></path>
-      </svg>
       <button class="spin" id="spinBtn" type="button">ルーレットを回す</button>
       <div class="result" id="spinRes" aria-live="polite">スペースキーで回す・止める</div>
     </div>
@@ -720,8 +713,8 @@ const CHANCE=[
  {t:'double',l:'やる気満々！<br>次の問題は賞金2倍'},
  {t:'collect',a:1,l:()=>`今日は誕生日！<br>全チームから${amt(1)}円ずつもらう`},
  {t:'give',a:1,l:()=>`みんなにおごることに…<br>全チームに${amt(1)}円ずつ払う`},
- {t:'again',l:'ラッキー！<br>もう一度ルーレットを回せる'},
- {t:'fate',l:'運命ルーレット！<br>プラスかマイナスか、回して決まる'},
+ {t:'again',l:()=>S.opts.mover==='dice'?'ラッキー！<br>もう一度サイコロを投げられる':'ラッキー！<br>もう一度ルーレットを回せる'},
+ {t:'fate',l:()=>S.opts.mover==='dice'?'運命サイコロ！<br>プラスかマイナスか、投げて決まる':'運命ルーレット！<br>プラスかマイナスか、回して決まる'},
  {t:'wheel2',l:'ルーレット×2！<br>2回回して、合計の数だけ進む'},
  {t:'dice2',l:'サイコロ×2！<br>2個投げて、合計の数だけ進む'},
  {t:'rich',a:3,l:()=>`いちばんお金持ちのチームから<br>${amt(3)}円もらう`},
@@ -1422,7 +1415,7 @@ function buildWheel(){
     h+=`<text transform="rotate(${i*60}) translate(0 -62)" text-anchor="middle" dominant-baseline="central" font-family="Dela Gothic One, sans-serif" font-size="38" fill="#1b2233">${i+1}</text>`;
   }
   h+=`<circle r="100" fill="none" stroke="#1b2233" stroke-width="5"/>`;
-  g.innerHTML=h;
+  if(g)g.innerHTML=h;
   const zg=$('zoomWheelG');if(zg)zg.innerHTML=h;
   const z2a=$('zoomWheel2aG');if(z2a)z2a.innerHTML=h;
   const z2b=$('zoomWheel2bG');if(z2b)z2b.innerHTML=h;
@@ -1440,7 +1433,7 @@ function setSpinBtn(){
   else{b.textContent=isDice?'サイコロを投げる':'ルーレットを回す';b.classList.remove('stop');b.disabled=S.busy||S.over||!curSlot;}
 }
 function tickSeg(){const s2=Math.floor((rot+30)/60);if(s2!==spinSeg){spinSeg=s2;sfx.tick();}}
-function setRot(){const t=`rotate(${rot})`;$('wheelG').setAttribute('transform',t);const zg=$('zoomWheelG');if(zg)zg.setAttribute('transform',t);}
+function setRot(){const t=`rotate(${rot})`;const wg=$('wheelG');if(wg)wg.setAttribute('transform',t);const zg=$('zoomWheelG');if(zg)zg.setAttribute('transform',t);}
 const zoomOn=()=>!!(S&&S.opts&&S.opts.zoom);
 function showSpinOv(kind){
   if(!zoomOn())return false;
@@ -1954,7 +1947,7 @@ async function chance(tm,tile){
   const el=$('after');const others=S.teams.filter(t=>t!==tm);let msg='';
   switch(c.t){
     case 'fwd': render();foot(el,'2マス進む',()=>{$('ov').hidden=true;move(tm,c.n,true)});return;
-    case 'fate': render();foot(el,'運命ルーレットを回す',()=>{$('ov').hidden=true;fateSpin(tm)});return;
+    case 'fate': render();foot(el,S.opts.mover==='dice'?'運命サイコロを投げる':'運命ルーレットを回す',()=>{$('ov').hidden=true;fateSpin(tm)});return;
     case 'wheel2': render();foot(el,'ルーレット×2を回す',()=>{$('ov').hidden=true;wheel2Spin(tm)});return;
     case 'dice2': render();foot(el,'サイコロ×2を投げる',()=>{$('ov').hidden=true;dice2Event(tm)});return;
     case 'oharai':{
@@ -2712,7 +2705,7 @@ function rulePages(){
       <div class="bonus">${bonus.map((v,i)=>`<span>${bi(`${i+1}着`,`第${i+1}名`)} +${amt(v)}</span>`).join('')}</div></div>`+
     item('お金がマイナスになったら「借金」。借金は総資産から引かれます。','钱变成负数就是“欠债”，欠债会从总资产中扣除。')},
   {t:['進み方','怎么玩'],body:
-    step(1,S.opts.mover==='dice'?'サイコロを投げて、出た目の数だけ進む。チャンスカードで「サイコロ×2」が出たら、その番だけ2個投げて合計の数だけ進む。':'ルーレットを回して「ストップ！」で止める。押さないと約'+auto+'秒で自動で止まる。チャンスカードで「ルーレット×2」が出たら、その番だけ2回回して合計の数だけ進む。',S.opts.mover==='dice'?'掷骰子，按点数前进。机会卡出现“骰子×2”时，那一回合掷两个，按总点数前进。':`转动轮盘，按“停止！”停下。不按的话，大约${auto}秒后会自动停下。机会卡出现“轮盘×2”时，那一回合转两次，按总点数前进。`)+
+    step(1,`ルーレットを回すか、サイコロを投げて、出た目の数だけ進む（どちらで進むかは設定で選べます）。ルーレットは「ストップ！」で止める。押さないと約${auto}秒で自動で止まる。チャンスカードで「ルーレット×2」「サイコロ×2」が出たら、その番だけ2つ回して（投げて）合計の数だけ進む。`,`转动轮盘或掷骰子，按出现的点数前进（用哪种方式可以在设置中选择）。轮盘按“停止！”停下，不按的话大约${auto}秒后会自动停下。机会卡出现“轮盘×2”“骰子×2”时，那一回合转（掷）两个，按总点数前进。`)+
     step(2,'止まったマスの問題に答える。レベル（N3・N2・N1）が高いほど賞金も大きい。会話や音読は先生が判定。','回答所停格子的题目。难度（N3、N2、N1）越高，奖金越多。会话和朗读由老师评分。')+
     step(3,(qt?`制限時間は${qt}秒。早く正解するとボーナス。`:'答える時間は無制限。')+(helps?'困ったら助っ人カードを1回ずつ使える。':''),
            (qt?`答题时间为${qt}秒，越快答对奖金越多。`:'答题没有时间限制。')+(helps?'遇到困难时，求助卡各能用一次。':''))},
