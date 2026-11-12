@@ -500,7 +500,7 @@ body.bigview .card{width:100%;border-radius:18px}
     <div class="clock" id="clock" hidden><span class="lab">授業の残り</span><span class="cnum" id="cnum">0:00</span><button type="button" id="clockStop">止める</button></div>
     <div class="wheelbox">
       <button class="spin" id="spinBtn" type="button">ルーレットを回す</button>
-      <div class="result" id="spinRes" aria-live="polite">スペースキーで回す・止める</div>
+      <div class="result" id="spinRes" aria-live="polite">画面タップ／スペースキーで回す・止める</div>
     </div>
     <div class="score"><div class="cap"><span>チーム</span><span>総資産</span></div><div id="score" class="score"></div></div>
     <p class="savestat" id="saveStat">まだセーブしていません</p>
@@ -536,7 +536,7 @@ body.bigview .card{width:100%;border-radius:18px}
       <div class="seg"><button class="ghost" id="slotBtn" type="button">セーブデータを選ぶ</button></div>
       <div class="seg"><button class="ghost" id="endBtn" type="button">ここで結果発表</button><button class="ghost" id="resetBtn" type="button">最初からやり直す</button></div>
       <h2 class="setsub">ルール</h2>
-      <p class="hint">勝ち負けは最後の総資産（所持金＋物件の値段）で決まります。所持金がマイナスになると借金です。問題マスではレベル（N3・N2・N1）を選べて、レベルが高いほど賞金もペナルティも大きくなります。「2マス進む」「3マス戻る」のマスや、先生が相手の役をする「会話チャレンジ」「面接」のマスもあります。悪いことが起きるマスでは、上手に謝れたら損が減ります（おわびチャレンジ）。問題をまちがえると、ほかのチームが横取りできます（設定でなしにもできます）。貧乏神は、ゲームの途中であらわれていちばんお金持ちのチームにつき、そのチームの番が終わるたびにいたずらをします。ほかのチームのいるマスを通ると押しつけられます。早くゴールしたチームほど大きなボーナスがもらえます（1着がいちばん多い）。給料日のマスを通ると、給料と物件の収益が入ります。<br>授業の残り時間が0になると、そのターンが終わったところで自動で結果発表になります。マスの数は18〜54マスから選べます。「マスの並び」をランダムにすると、ステージの中でマスの順番と問題の種類が入れかわります。まだだれもゴールしていなければ、ゲームの途中でも「短くする」「長くする」で変えられます。<br>ターンが終わるたびに、選んだセーブデータへ自動でセーブされます。チーム数で「ソロ」を選ぶと、1人で遊べます（早押し対決はふつうの問題になり、結果では自己ベストと比べます）。「音読チャレンジ」は、結婚・うれしいイベント・物件のマスで、読みがなのない文を読むものです。<br>キー操作：スペース＝回す・止める／1〜4＝答える</p>
+      <p class="hint">勝ち負けは最後の総資産（所持金＋物件の値段）で決まります。所持金がマイナスになると借金です。問題マスではレベル（N3・N2・N1）を選べて、レベルが高いほど賞金もペナルティも大きくなります。「2マス進む」「3マス戻る」のマスや、先生が相手の役をする「会話チャレンジ」「面接」のマスもあります。悪いことが起きるマスでは、上手に謝れたら損が減ります（おわびチャレンジ）。問題をまちがえると、ほかのチームが横取りできます（設定でなしにもできます）。貧乏神は、ゲームの途中であらわれていちばんお金持ちのチームにつき、そのチームの番が終わるたびにいたずらをします。ほかのチームのいるマスを通ると押しつけられます。早くゴールしたチームほど大きなボーナスがもらえます（1着がいちばん多い）。給料日のマスを通ると、給料と物件の収益が入ります。<br>授業の残り時間が0になると、そのターンが終わったところで自動で結果発表になります。マスの数は18〜54マスから選べます。「マスの並び」をランダムにすると、ステージの中でマスの順番と問題の種類が入れかわります。まだだれもゴールしていなければ、ゲームの途中でも「短くする」「長くする」で変えられます。<br>ターンが終わるたびに、選んだセーブデータへ自動でセーブされます。チーム数で「ソロ」を選ぶと、1人で遊べます（早押し対決はふつうの問題になり、結果では自己ベストと比べます）。「音読チャレンジ」は、結婚・うれしいイベント・物件のマスで、読みがなのない文を読むものです。<br>キー操作：スペース＝回す・止める／1〜4＝答える（ボタンのない所をタップしても、回す・止めるができます）</p>
       
   </div></div>
 </div>
@@ -1299,7 +1299,7 @@ function newGame(n,len,rand){
      levels:prev&&prev.levels?prev.levels:[...LEVELS],qtime:prev?prev.qtime:20,misses:[],bomb:newBomb(prev&&prev.bomb?prev.bomb.on:true),bombDone:false,bombMoved:false,opts:Object.assign({steal:true,bet:true,half:true,ask:true,sorry:true,read:true,mover:'wheel',diceN:1,zoom:true},prev&&prev.opts||{}),talkScenes:prev&&prev.talkScenes?[...prev.talkScenes]:[...ALL_TALK],unit:prev&&prev.unit||'oku',readThemes:prev&&prev.readThemes?[...prev.readThemes]:[...READ_TILE_THEMES]};
   S.opts.diceN=1; // 旧設定のサイコロ×2を引き継がない（×2はチャンスカード専用）
   decks={};$('ov').hidden=true;timeUp=classEnd?classEnd<=Date.now():false;
-  buildBoard();render();$('spinRes').textContent='スペースキーで回す・止める';buildSettings();
+  buildBoard();render();$('spinRes').textContent='画面タップ／スペースキーで回す・止める';buildSettings();
 }
 function cell(k){const r=Math.floor(k/6),c=r%2===0?k%6:5-k%6;return{r,c}}
 function topLevel(){return S.levels.includes('N1')?'N1':S.levels.includes('N2')?'N2':'N3'}
@@ -1438,7 +1438,7 @@ const zoomOn=()=>!!(S&&S.opts&&S.opts.zoom);
 function showSpinOv(kind){
   if(!zoomOn())return false;
   $('spinOv').hidden=false;$('zoomWheel').hidden=kind!=='wheel';$('zoomWheel').style.display=kind==='wheel'?'':'none';$('diceScene').hidden=kind!=='dice';$('diceScene').style.display=kind==='dice'?'':'none';$('wheel2Wrap').style.display='none';
-  $('zoomStop').hidden=kind!=='wheel';$('zoomRes').textContent=kind==='wheel'?'ストップを押してね':'';
+  $('zoomStop').hidden=kind!=='wheel';$('zoomRes').textContent=kind==='wheel'?'タップかストップ！で止めてね':'';
   if(kind==='wheel')setRot();
   return true;
 }
@@ -1549,7 +1549,7 @@ function spin(){
   if(S.opts&&S.opts.mover==='dice'){rollDice();return;}
   S.busy=true;S.last=null;spinPhase='free';render();setSpinBtn();
   spinSeg=Math.floor((rot+30)/60);
-  $('spinRes').textContent='ストップを押してね';
+  $('spinRes').textContent='タップかストップで止めてね';
   showSpinOv('wheel');
   let prev=performance.now();
   (function free(now){
@@ -2705,7 +2705,7 @@ function rulePages(){
       <div class="bonus">${bonus.map((v,i)=>`<span>${bi(`${i+1}着`,`第${i+1}名`)} +${amt(v)}</span>`).join('')}</div></div>`+
     item('お金がマイナスになったら「借金」。借金は総資産から引かれます。','钱变成负数就是“欠债”，欠债会从总资产中扣除。')},
   {t:['進み方','怎么玩'],body:
-    step(1,`ルーレットを回すか、サイコロを投げて、出た目の数だけ進む（どちらで進むかは設定で選べます）。ルーレットは「ストップ！」で止める。押さないと約${auto}秒で自動で止まる。チャンスカードで「ルーレット×2」「サイコロ×2」が出たら、その番だけ2つ回して（投げて）合計の数だけ進む。`,`转动轮盘或掷骰子，按出现的点数前进（用哪种方式可以在设置中选择）。轮盘按“停止！”停下，不按的话大约${auto}秒后会自动停下。机会卡出现“轮盘×2”“骰子×2”时，那一回合转（掷）两个，按总点数前进。`)+
+    step(1,`ルーレットを回すか、サイコロを投げて、出た目の数だけ進む（どちらで進むかは設定で選べます）。ルーレットは「ストップ！」か画面タップで止める。押さないと約${auto}秒で自動で止まる。チャンスカードで「ルーレット×2」「サイコロ×2」が出たら、その番だけ2つ回して（投げて）合計の数だけ進む。`,`转动轮盘或掷骰子，按出现的点数前进（用哪种方式可以在设置中选择）。轮盘按“停止！”或点按屏幕停下，不按的话大约${auto}秒后会自动停下。机会卡出现“轮盘×2”“骰子×2”时，那一回合转（掷）两个，按总点数前进。`)+
     step(2,'止まったマスの問題に答える。レベル（N3・N2・N1）が高いほど賞金も大きい。会話や音読は先生が判定。','回答所停格子的题目。难度（N3、N2、N1）越高，奖金越多。会话和朗读由老师评分。')+
     step(3,(qt?`制限時間は${qt}秒。早く正解するとボーナス。`:'答える時間は無制限。')+(helps?'困ったら助っ人カードを1回ずつ使える。':''),
            (qt?`答题时间为${qt}秒，越快答对奖金越多。`:'答题没有时间限制。')+(helps?'遇到困难时，求助卡各能用一次。':''))},
@@ -2849,6 +2849,17 @@ $('classStart').addEventListener('click',()=>{const m=Math.round(+$('classMin').
 $('clockStop').addEventListener('click',stopClass);
 $('spinBtn').addEventListener('click',spin);
 $('zoomStop').addEventListener('click',stopSpin);
+/* tap anywhere (away from buttons/inputs) to spin or stop, like the Space key.
+   While the zoom overlay is up, a tap on it stops the wheel; stopSpin() ignores
+   the scenes that have no manual stop (dice throws, fate wheels, roulette x2). */
+$('spinOv').addEventListener('click',()=>stopSpin());
+document.addEventListener('click',e=>{
+  if(!$('spinOv').hidden)return;               // overlay taps are handled above
+  if(!$('setPage').hidden)return;              // settings page is open
+  const t=e.target;
+  if(!t.closest||t.closest('button,a,input,select,textarea,label,[contenteditable="true"]'))return;
+  spin();                                      // spin() itself refuses unless idle (dialogs, questions, busy, game over)
+});
 let resetArmed=false;
 $('resetBtn').addEventListener('click',()=>{
   const b=$('resetBtn');
