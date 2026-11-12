@@ -1455,11 +1455,14 @@ function buildCube(fate){
   return c;
 }
 function showDiceScene(){ $('spinOv').hidden=false;$('zoomWheel').hidden=true;$('zoomWheel').style.display='none';$('fateWheel').style.display='none';$('wheel2Wrap').style.display='none';$('diceScene').hidden=false;$('diceScene').style.display='';$('zoomStop').hidden=true;$('zoomRes').textContent=''; }
-/* pseudo-physics dice throw: fast spin that friction slows down, a rolling path across the
-   zoom screen, shrinking bounces, a shadow that tracks the height, and clatter sounds.
+/* pseudo-physics dice throw: the die starts up in the air, drops with gravity, lands
+   with a hard clack, then rolls across the zoom screen with shrinking bounces, a shadow
+   that tracks the height, and clatter sounds.
    The final face is fixed in advance; the animation only decides how it gets there. */
 const DICE_TOP={1:[90,0,0],2:[0,0,0],3:[0,-90,-90],4:[0,90,90],5:[180,0,0],6:[-90,0,180]}; // final [rx,ry,rz] per face: brings that face to the top, print upright
-const DICE_BOUNDS=[0,.42,.68,.86,1], DICE_APEX=[.55,.26,.12,.045];
+const DICE_FALL_T=.30, DICE_DROP=.9; // the fall takes the first 30% of the throw, from .9 cube-heights up
+const DICE_BB=[.30,.56,.76,.90,1], DICE_BAPEX=[.32,.16,.07,.025]; // bounce segments / apex heights after the fall
+const DICE_LAND=[.30,.56,.76,.90], DICE_LAND_VOL=[.36,.27,.20,.14]; // landing times (local t) and clack volumes
 function buildDiceUnits(count,fate){
   const row=$('diceRow');row.innerHTML='';
   return Array.from({length:count},()=>{
@@ -1470,37 +1473,39 @@ function buildDiceUnits(count,fate){
     return {unit,tilt:t,cube:c,shadow:sh};
   });
 }
-function diceBounceY(t,ds){
+function diceHeightY(lt,ds){ // vertical offset (px, negative = up): gravity fall, then shrinking bounces
   if(reduce)return 0;
-  for(let i=0;i<4;i++){if(t<=DICE_BOUNDS[i+1]){const lt=(t-DICE_BOUNDS[i])/(DICE_BOUNDS[i+1]-DICE_BOUNDS[i]);return -DICE_APEX[i]*ds*Math.sin(Math.PI*lt);}}
+  if(lt<=0)return -DICE_DROP*ds;
+  if(lt<DICE_FALL_T){const q=lt/DICE_FALL_T;return -DICE_DROP*ds*(1-q*q);} // speeds up as it falls
+  for(let i=0;i<4;i++){if(lt<=DICE_BB[i+1]){const st=(lt-DICE_BB[i])/(DICE_BB[i+1]-DICE_BB[i]);return -DICE_BAPEX[i]*ds*Math.sin(Math.PI*st);}}
   return 0;
 }
 function animateDiceThrow(units,faces,onDone){
-  const ds=units[0].cube.offsetWidth||200, T=reduce?260:1750;
+  const ds=units[0].cube.offsetWidth||200, T=reduce?260:1750, dropPx=DICE_DROP*ds;
   const ps=units.map((u,i)=>{
     const fv=DICE_TOP[faces[i]];
     const dir=units.length===2?(i===0?-1:1):(Math.random()<.5?-1:1);
     return {rx:fv[0]+360*(2+((Math.random()*2)|0)), ry:fv[1]+360*(2+((Math.random()*2)|0))*(Math.random()<.5?1:-1),
       rz:fv[2]+360*((Math.random()*2)|0)*(Math.random()<.5?1:-1),
-      dx:reduce?0:dir*(.12+Math.random()*.22)*ds, ph:Math.random()*6.28};
+      dx:reduce?0:dir*(.12+Math.random()*.22)*ds, ph:Math.random()*6.28,
+      delay:reduce?0:40+i*150, fired:new Set()}; // a second die drops a beat after the first
   });
-  const fired=new Set();let nextClack=0;const t0=performance.now();
+  let nextClack=0;const t0=performance.now();
   (function frame(now){
-    const t=Math.min(1,(now-t0)/T), pe=1-Math.pow(1-t,4), px=1-Math.pow(1-t,3);
+    const el=now-t0, t=Math.min(1,el/T);
     units.forEach((u,i)=>{const p=ps[i];
-      u.cube.style.transform=`rotateX(${p.rx*pe}deg) rotateY(${p.ry*pe}deg) rotateZ(${p.rz*pe+Math.sin(t*7.85+p.ph)*(1-t)*22}deg)`;
-      const y=diceBounceY(t,ds);
+      const lt=Math.max(0,Math.min(1,(el-p.delay)/Math.max(1,T-p.delay))), pe=1-Math.pow(1-lt,4), px=1-Math.pow(1-lt,3);
+      u.cube.style.transform=`rotateX(${p.rx*pe}deg) rotateY(${p.ry*pe}deg) rotateZ(${p.rz*pe+Math.sin(lt*7.85+p.ph)*(1-lt)*22}deg)`;
+      const y=diceHeightY(lt,ds);
       u.tilt.style.transform=`rotateX(-42deg) rotateY(20deg) translateY(${y}px)`;
       u.unit.style.transform=`translateX(${p.dx*px}px)`;
-      const hf=Math.min(1,-y/(DICE_APEX[0]*ds));
-      u.shadow.style.transform=`scaleX(${1-.38*hf})`;u.shadow.style.opacity=String(.5-.3*hf);
+      const hf=Math.min(1,-y/dropPx); // shadow shrinks, fades and softens while the die is high
+      u.shadow.style.transform=`scaleX(${1-.42*hf})`;u.shadow.style.opacity=String(.5-.32*hf);u.shadow.style.filter=`blur(${5+5*hf}px)`;
+      if(!reduce)DICE_LAND.forEach((L,ix)=>{if(lt>=L&&!p.fired.has(ix)){p.fired.add(ix);clack(DICE_LAND_VOL[ix],ix===0?950:1100);}});
     });
-    if(!reduce){
-      if(t<.62&&now>=nextClack){clack(.07+.2*(1-t),1500+Math.random()*900);nextClack=now+80+t*110;}
-      [.42,.68,.86].forEach((it,ix)=>{if(t>=it&&!fired.has(ix)){fired.add(ix);clack(.3-ix*.06,1050);}});
-    }
+    if(!reduce&&t<.62&&now>=nextClack){clack(.07+.2*(1-t),1500+Math.random()*900);nextClack=now+80+t*110;}
     if(t<1){requestAnimationFrame(frame);return;}
-    units.forEach((u,i)=>{u.cube.style.transform=DICE_FINAL[faces[i]];u.tilt.style.transform='';u.unit.style.transform='';u.shadow.style.transform='';u.shadow.style.opacity='';});
+    units.forEach((u,i)=>{u.cube.style.transform=DICE_FINAL[faces[i]];u.tilt.style.transform='';u.unit.style.transform='';u.shadow.style.transform='';u.shadow.style.opacity='';u.shadow.style.filter='';});
     thock();
     onDone();
   })(t0);
